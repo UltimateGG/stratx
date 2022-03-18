@@ -5,13 +5,14 @@ import stratx.exceptions.InvalidCandlestickException;
 /** Immutable class representing a candlestick/OHLC values. */
 public class Candlestick {
     private static int MAX_ID = 0;
-    private final int ID = MAX_ID++;
+    private int ID = MAX_ID++;
     private final String date;
     private final double open;
     private final double high;
     private final double low;
     private final double close;
     private final long volume;
+    private Candlestick previous;
 
 
     public Candlestick(String date, double open, double high, double low, double close, long volume) throws InvalidCandlestickException {
@@ -27,19 +28,19 @@ public class Candlestick {
     }
 
     public double getOpen() {
-        return open;
+        return previous == null ? open : (previous.getOpen() + previous.getClose()) / 2;
     }
 
     public double getHigh() {
-        return high;
+        return previous == null ? high : Math.max(high, Math.max(open, close));
     }
 
     public double getLow() {
-        return low;
+        return previous == null ? low : Math.min(low, Math.min(open, close));
     }
 
     public double getClose() {
-        return close;
+        return previous == null ? close : (open + high + low + close) / 4;
     }
 
     public long getVolume() {
@@ -54,6 +55,10 @@ public class Candlestick {
         return ID;
     }
 
+    protected void setID(int ID) {
+        this.ID = ID;
+    }
+
     public double getChange() {
         return close - open;
     }
@@ -62,21 +67,14 @@ public class Candlestick {
         return (close - open) / open;
     }
 
-    public Candlestick toHeikinAshi(Candlestick previous) {
-        if (previous == null) return this;
-        return new Candlestick(
-                date,
-                (previous.getOpen() + previous.getClose()) / 2,
-                Math.max(high, Math.max(open, close)),
-                Math.min(low, Math.min(open, close)),
-                (open + high + low + close) / 4,
-                volume
-        );
+    /** Effectivity makes this candle a heikin ashi candle */
+    public void setPrevious(Candlestick previous) {
+        this.previous = previous;
     }
 
     @Override
     public String toString() {
-        return String.format("[Candlestick @ %s] O:%.2f, H:%.2f, L:%.2f, C:%.2f, V:%d", date, open, high, low, close, volume);
+        return String.format("[Candlestick @ %s] O:%.2f, H:%.2f, L:%.2f, C:%.2f, V:%d ID:%d", date, open, high, low, close, volume, ID);
     }
 
     @Override
@@ -92,7 +90,10 @@ public class Candlestick {
     @Override
     public Candlestick clone() throws CloneNotSupportedException {
         super.clone();
-        return new Candlestick(date, open, high, low, close, volume);
+        Candlestick clone = new Candlestick(date, open, high, low, close, volume);
+        clone.setPrevious(previous);
+        clone.setID(ID); // Persist id
+        return clone;
     }
 
     @SuppressWarnings("unused")

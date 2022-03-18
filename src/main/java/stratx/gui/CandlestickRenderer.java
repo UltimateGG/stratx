@@ -4,15 +4,6 @@ package stratx.gui;
 // (powered by FernFlower decompiler)
 //
 
-import java.awt.*;
-import java.awt.geom.Rectangle2D;
-import java.awt.geom.Rectangle2D.Double;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.util.ArrayList;
-
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.entity.EntityCollection;
 import org.jfree.chart.labels.HighLowItemLabelGenerator;
@@ -34,6 +25,17 @@ import org.jfree.data.xy.IntervalXYDataset;
 import org.jfree.data.xy.XYDataset;
 import stratx.utils.Signal;
 
+import java.awt.*;
+import java.awt.geom.Rectangle2D;
+import java.awt.geom.Rectangle2D.Double;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class CandlestickRenderer extends AbstractXYItemRenderer implements XYItemRenderer, Cloneable, PublicCloneable, Serializable {
     private static final long serialVersionUID = 50390395841817621L;
     public static final int WIDTHMETHOD_AVERAGE = 0;
@@ -51,7 +53,7 @@ public class CandlestickRenderer extends AbstractXYItemRenderer implements XYIte
     private transient Paint volumePaint;
     private transient double maxVolume;
     private boolean useOutlinePaint;
-    private final ArrayList<SignalIndicator> indicators = new ArrayList<>();
+    private final List<SignalIndicator> indicators = Collections.synchronizedList(new ArrayList<>());
 
     public CandlestickRenderer() {
         this(-1.0D);
@@ -401,12 +403,14 @@ public class CandlestickRenderer extends AbstractXYItemRenderer implements XYIte
             this.addEntity(entities, hotspot, dataset, series, item, 0.0D, 0.0D);
         }
 
-        // Indicators
-        for (SignalIndicator signal : this.indicators) {
-            if (signal.getCandleID() == highLowData.getID(series, item)) {
-                g2.setColor(signal.getType() == Signal.BUY ? Color.GREEN : Color.RED);
-                //g2.setStroke(new BasicStroke(1.0F));
-                g2.drawLine((int) xx, 0, (int) xx, 900);
+        // Indicators display
+        synchronized (this.indicators) {
+            for (SignalIndicator signal : this.indicators) {
+                if (signal.getCandleID() == highLowData.getID(series, item)) {
+                    g2.setColor(signal.getType() == Signal.BUY ? Color.GREEN : Color.RED);
+                    //g2.setStroke(new BasicStroke(1.0F));
+                    g2.drawLine((int) xx, 0, (int) xx, 900);
+                }
             }
         }
     }
@@ -443,7 +447,9 @@ public class CandlestickRenderer extends AbstractXYItemRenderer implements XYIte
     }
 
     public void addSignalIndicatorOn(int candleID, Signal type) {
-        this.indicators.add(new SignalIndicator(candleID, type));
+        synchronized (this.indicators) {
+            this.indicators.add(new SignalIndicator(candleID, type));
+        }
     }
 
     public Object clone() throws CloneNotSupportedException {

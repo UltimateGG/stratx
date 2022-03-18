@@ -8,8 +8,6 @@ import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.time.FixedMillisecond;
-import org.jfree.data.time.ohlc.OHLCSeries;
-import org.jfree.data.time.ohlc.OHLCSeriesCollection;
 import stratx.StratX;
 import stratx.utils.Candlestick;
 import stratx.utils.MathUtils;
@@ -120,7 +118,7 @@ public class ChartRenderer extends JPanel {
             }
 
             if (scale == 1) {
-                this.addCandle(data.get(i).toHeikinAshi(data.get(i - 1)));
+                this.addCandle(data.get(i));
                 continue;
             }
 
@@ -144,7 +142,8 @@ public class ChartRenderer extends JPanel {
                     maxLow,
                     maxClose,
                     volume
-            ).toHeikinAshi(previous);
+            );
+            candle.setPrevious(previous);
             this.addCandle(candle);
             previous = candle;
         }

@@ -1,10 +1,11 @@
 package stratx;
 
-import com.google.gson.*;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.istack.internal.NotNull;
-import stratx.exceptions.LoaderParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import stratx.exceptions.LoaderParseException;
 import stratx.utils.Candlestick;
 
 import java.io.BufferedReader;
@@ -18,6 +19,7 @@ import java.util.List;
 
 public class Loader {
     private static Loader INSTANCE;
+    private static final boolean HEIKIN_ASHI_CANDLES = true;
     private static boolean isCSV = false;
     private static boolean isJSON = false;
     private File dataFile;
@@ -61,6 +63,13 @@ public class Loader {
 
         if (data.size() == 0)
             throw new LoaderParseException("Invalid price data file or format");
+
+        if (HEIKIN_ASHI_CANDLES && data.size() > 1) {
+            for (int i = 0; i < data.size(); i++) {
+                if (i == 0) continue;
+                data.get(i).setPrevious(data.get(i - 1));
+            }
+        }
 
         System.gc(); // Clear all strings from loading the file
         return Collections.unmodifiableList(data);
