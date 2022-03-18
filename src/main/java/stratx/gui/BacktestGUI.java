@@ -5,7 +5,6 @@ import stratx.utils.Candlestick;
 import javax.swing.*;
 import java.io.File;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 
 public class BacktestGUI {
@@ -31,17 +30,8 @@ public class BacktestGUI {
             frame.setIconImage(icon.getImage());
         } catch (Exception ignored) {}
 
-        String chartName = "Backtest";
-        try { // Standard backtest file name conversion
-            String newName = chartTitle.substring(chartTitle.lastIndexOf("/") + 1).split("\\.")[0];
-            newName = newName.replaceAll("_", " ");
-            newName = newName.substring(0, newName.lastIndexOf(" ")) + " ";
-            newName += interval.getValue() + " " + interval.toLongName();
-
-            chartName = newName;
-        } catch (Exception ignored) {}
-
-        chartRenderer = new ChartRenderer(chartName, width, height);
+        chartRenderer = new ChartRenderer(chartTitle.substring(chartTitle.lastIndexOf("/") + 1)
+                + " (" + interval.getValue() + " " + interval.toLongName() + ")",width, height);
         chartRenderer.setBackground(ChartRenderer.darkThemeColor);
     }
 
