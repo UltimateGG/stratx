@@ -44,16 +44,17 @@ public class CustomTooltip extends HighLowItemLabelGenerator {
      */
     @Override
     public String generateToolTip(XYDataset dataset, int series, int item) {
-        if (!(dataset instanceof OHLCDataset)) return null;
+        if (!(dataset instanceof KeyedOHLCDataset)) return null;
         StringBuilder sb = new StringBuilder();
 
-        OHLCDataset d = (OHLCDataset) dataset;
+        KeyedOHLCDataset d = (KeyedOHLCDataset) dataset;
         Number high = d.getHigh(series, item);
         Number low = d.getLow(series, item);
         Number open = d.getOpen(series, item);
         Number close = d.getClose(series, item);
         Number volume = d.getVolume(series, item);
         Number x = d.getX(series, item);
+        int id = d.getID(series, item);
 
         if (x != null) {
             sb.append("TIME: ").append(this.dateFormatter.format(new Date(x.longValue())));
@@ -62,6 +63,7 @@ public class CustomTooltip extends HighLowItemLabelGenerator {
             if (low != null) sb.append(" | LOW: ").append(this.numberFormatter.format(low.doubleValue()));
             if (close != null) sb.append(" | CLOSE: ").append(this.numberFormatter.format(close.doubleValue()));
             if (volume != null) sb.append(" | VOL: ").append(this.numberFormatter.format(volume.doubleValue()));
+            sb.append(" #").append(id);
         }
 
         return sb.toString();

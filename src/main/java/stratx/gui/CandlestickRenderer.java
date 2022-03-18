@@ -4,18 +4,15 @@ package stratx.gui;
 // (powered by FernFlower decompiler)
 //
 
-import java.awt.AlphaComposite;
-import java.awt.Color;
-import java.awt.Composite;
-import java.awt.Graphics2D;
-import java.awt.Paint;
-import java.awt.Stroke;
+import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.Rectangle2D.Double;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
+
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.entity.EntityCollection;
 import org.jfree.chart.labels.HighLowItemLabelGenerator;
@@ -34,11 +31,11 @@ import org.jfree.chart.util.PublicCloneable;
 import org.jfree.chart.util.SerialUtils;
 import org.jfree.data.Range;
 import org.jfree.data.xy.IntervalXYDataset;
-import org.jfree.data.xy.OHLCDataset;
 import org.jfree.data.xy.XYDataset;
+import stratx.utils.Signal;
 
 public class CandlestickRenderer extends AbstractXYItemRenderer implements XYItemRenderer, Cloneable, PublicCloneable, Serializable {
-    private static final long serialVersionUID = 50390395841817121L;
+    private static final long serialVersionUID = 50390395841817621L;
     public static final int WIDTHMETHOD_AVERAGE = 0;
     public static final int WIDTHMETHOD_SMALLEST = 1;
     public static final int WIDTHMETHOD_INTERVALDATA = 2;
@@ -54,6 +51,7 @@ public class CandlestickRenderer extends AbstractXYItemRenderer implements XYIte
     private transient Paint volumePaint;
     private transient double maxVolume;
     private boolean useOutlinePaint;
+    private final ArrayList<SignalIndicator> indicators = new ArrayList<>();
 
     public CandlestickRenderer() {
         this(-1.0D);
@@ -199,7 +197,7 @@ public class CandlestickRenderer extends AbstractXYItemRenderer implements XYIte
         double xx2 = axis.valueToJava2D(x2, dataArea, edge);
         this.maxCandleWidth = Math.abs(xx2 - xx1);
         if (this.drawVolume) {
-            OHLCDataset highLowDataset = (OHLCDataset)dataset;
+            KeyedOHLCDataset highLowDataset = (KeyedOHLCDataset)dataset;
             this.maxVolume = 0.0D;
 
             for(int series = 0; series < highLowDataset.getSeriesCount(); ++series) {
@@ -233,7 +231,7 @@ public class CandlestickRenderer extends AbstractXYItemRenderer implements XYIte
             entities = info.getOwner().getEntityCollection();
         }
 
-        OHLCDataset highLowData = (OHLCDataset)dataset;
+        KeyedOHLCDataset highLowData = (KeyedOHLCDataset)dataset;
         double x = highLowData.getXValue(series, item);
         double yHigh = highLowData.getHighValue(series, item);
         double yLow = highLowData.getLowValue(series, item);
@@ -332,7 +330,7 @@ public class CandlestickRenderer extends AbstractXYItemRenderer implements XYIte
             g2.setComposite(originalComposite);
         }
 
-        // stratx.StratX: Overrode so the outline/wick is the candle body color
+        // StratX: Overrode so the outline/wick is the candle body color
         Paint p1 = yClose > yOpen ? this.upPaint : this.downPaint;
         p = p1 != null ? p1 : p;
 
@@ -402,6 +400,15 @@ public class CandlestickRenderer extends AbstractXYItemRenderer implements XYIte
         if (entities != null) {
             this.addEntity(entities, hotspot, dataset, series, item, 0.0D, 0.0D);
         }
+
+        // Indicators
+        for (SignalIndicator signal : this.indicators) {
+            if (signal.getCandleID() == highLowData.getID(series, item)) {
+                g2.setColor(signal.getType() == Signal.BUY ? Color.GREEN : Color.RED);
+                //g2.setStroke(new BasicStroke(1.0F));
+                g2.drawLine((int) xx, 0, (int) xx, 900);
+            }
+        }
     }
 
     public boolean equals(Object obj) {
@@ -433,6 +440,10 @@ public class CandlestickRenderer extends AbstractXYItemRenderer implements XYIte
                 return PaintUtils.equal(this.volumePaint, that.volumePaint) && super.equals(obj);
             }
         }
+    }
+
+    public void addSignalIndicatorOn(int candleID, Signal type) {
+        this.indicators.add(new SignalIndicator(candleID, type));
     }
 
     public Object clone() throws CloneNotSupportedException {

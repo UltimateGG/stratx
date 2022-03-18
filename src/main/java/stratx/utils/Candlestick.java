@@ -4,6 +4,8 @@ import stratx.exceptions.InvalidCandlestickException;
 
 /** Immutable class representing a candlestick/OHLC values. */
 public class Candlestick {
+    private static int MAX_ID = 0;
+    private final int ID = MAX_ID++;
     private final String date;
     private final double open;
     private final double high;
@@ -48,6 +50,10 @@ public class Candlestick {
         return date;
     }
 
+    public int getID() {
+        return ID;
+    }
+
     public double getChange() {
         return close - open;
     }
@@ -70,7 +76,7 @@ public class Candlestick {
 
     @Override
     public String toString() {
-        return String.format("[utils.Candlestick @ %s] O:%.2f, H:%.2f, L:%.2f, C:%.2f, V:%d", date, open, high, low, close, volume);
+        return String.format("[Candlestick @ %s] O:%.2f, H:%.2f, L:%.2f, C:%.2f, V:%d", date, open, high, low, close, volume);
     }
 
     @Override
@@ -80,7 +86,7 @@ public class Candlestick {
         if (!(obj instanceof Candlestick)) return false;
 
         Candlestick other = (Candlestick) obj;
-        return this.date.equals(other.date) && this.open == other.open && this.high == other.high && this.low == other.low && this.close == other.close && this.volume == other.volume;
+        return this.ID == other.getID() && this.date.equals(other.date) && this.open == other.open && this.high == other.high && this.low == other.low && this.close == other.close && this.volume == other.volume;
     }
 
     @Override

@@ -3,7 +3,9 @@ package stratx.gui;
 import stratx.utils.Candlestick;
 
 import javax.swing.*;
+import java.io.File;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 public class BacktestGUI {
@@ -23,11 +25,11 @@ public class BacktestGUI {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // Set icon
-        URL iconURL = getClass().getResource("icon.png");
-        if (iconURL != null) {
+        try {
+            URL iconURL = new File("src/main/resources/icon.png").toURI().toURL();
             ImageIcon icon = new ImageIcon(iconURL);
             frame.setIconImage(icon.getImage());
-        }
+        } catch (Exception ignored) {}
 
         String chartName = "Backtest";
         try { // Standard backtest file name conversion
@@ -49,6 +51,10 @@ public class BacktestGUI {
 
     public void show() {
         SwingUtilities.invokeLater(this::setVisible); // New thread
+    }
+
+    public ChartRenderer getChartRenderer() {
+        return chartRenderer;
     }
 
     private void setVisible() {

@@ -12,7 +12,8 @@ import org.jfree.data.time.ohlc.OHLCSeries;
 import org.jfree.data.time.ohlc.OHLCSeriesCollection;
 import stratx.StratX;
 import stratx.utils.Candlestick;
-import stratx.utils.MathUtil;
+import stratx.utils.MathUtils;
+import stratx.utils.Signal;
 
 import javax.swing.*;
 import java.awt.*;
@@ -28,7 +29,8 @@ public class ChartRenderer extends JPanel {
     public static final Color darkThemeColor = new Color(0x171A21);
     public static final Color darkThemeLighterColor = new Color(0x222272F);
     private final JFreeChart candlestickChart;
-    private OHLCSeries ohlcSeries;
+    private KeyedOHLCSeries ohlcSeries;
+    private CandlestickRenderer candlestickRenderer;
 
     public ChartRenderer(String title, int width, int height) {
         candlestickChart = createChart(title);
@@ -45,8 +47,8 @@ public class ChartRenderer extends JPanel {
 
     private JFreeChart createChart(String chartTitle) {
         // Create OHLCSeriesCollection as a price dataset for candlestick chart
-        OHLCSeriesCollection candlestickDataset = new OHLCSeriesCollection();
-        ohlcSeries = new OHLCSeries("Price");
+        KeyedOHLCSeriesCollection candlestickDataset = new KeyedOHLCSeriesCollection();
+        ohlcSeries = new KeyedOHLCSeries("Price");
         candlestickDataset.addSeries(ohlcSeries);
 
         // Price axis & label
@@ -54,7 +56,7 @@ public class ChartRenderer extends JPanel {
         priceAxis.setLabelFont(labelFont);
         priceAxis.setTickLabelFont(tickFont);
         priceAxis.setAutoRangeIncludesZero(false);
-        priceAxis.setNumberFormatOverride(MathUtil.COMMAS);
+        priceAxis.setNumberFormatOverride(MathUtils.COMMAS);
         priceAxis.setLabelPaint(Color.WHITE);
         priceAxis.setTickLabelPaint(Color.WHITE);
         priceAxis.setAxisLinePaint(darkThemeLighterColor);
@@ -71,8 +73,8 @@ public class ChartRenderer extends JPanel {
         dateAxis.setUpperMargin(0.02);
 
         // Create candlestick chart renderer
-        CandlestickRenderer candlestickRenderer = new CandlestickRenderer(CandlestickRenderer.WIDTHMETHOD_AVERAGE,
-                false, new CustomTooltip(new SimpleDateFormat("kk:mm:ss a"), MathUtil.TWO_DEC));
+        candlestickRenderer = new CandlestickRenderer(CandlestickRenderer.WIDTHMETHOD_AVERAGE,
+                false, new CustomTooltip(new SimpleDateFormat("kk:mm:ss a"), MathUtils.TWO_DEC));
         candlestickRenderer.setUseOutlinePaint(false);
 
         // Create subplot
@@ -153,8 +155,21 @@ public class ChartRenderer extends JPanel {
                 c.getOpen(),
                 c.getHigh(),
                 c.getLow(),
-                c.getClose()
+                c.getClose(),
+                c.getID()
         );
+    }
+
+    public void addSignalIndicatorOn(int candleID, Signal type) {
+        candlestickRenderer.addSignalIndicatorOn(candleID, type);
+    }
+
+    public void clearData() {
+        ohlcSeries.clear();
+    }
+
+    public CandlestickRenderer getCandlestickRenderer() {
+        return candlestickRenderer;
     }
 
     public String getTitle() {
