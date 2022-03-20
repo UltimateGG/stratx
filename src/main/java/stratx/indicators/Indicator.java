@@ -1,12 +1,11 @@
 package stratx.indicators;
 
-import stratx.utils.Candlestick;
-import stratx.utils.Signal;
+import stratx.BackTest;
 
-public interface Indicator {
-    String getName();
+public class Indicator {
+    protected final BackTest simulation;
 
-    void update(Candlestick candle);
-
-    Signal getSignal();
+    public Indicator(BackTest simulation) {
+        this.simulation = simulation;
+    }
 }

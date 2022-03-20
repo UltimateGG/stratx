@@ -18,7 +18,11 @@ public class StratX {
         LOGGER.warn(String.format(msg, args));
     }
 
+    public static void error(String msg, Throwable e) {
+        LOGGER.error(msg, e);
+    }
+
     public static void error(String msg, Object... args) {
-        LOGGER.warn(String.format(msg, args));
+        LOGGER.error(String.format(msg, args));
     }
 }

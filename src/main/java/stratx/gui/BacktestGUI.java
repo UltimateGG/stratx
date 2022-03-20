@@ -55,4 +55,8 @@ public class BacktestGUI {
         frame.pack();
         frame.setVisible(true);
     }
+
+    public void dispose() {
+        frame.dispose();
+    }
 }

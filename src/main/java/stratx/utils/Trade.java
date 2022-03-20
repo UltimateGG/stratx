@@ -3,6 +3,8 @@ package stratx.utils;
 import stratx.BackTest;
 
 public class Trade {
+    private static int MAX_ID = 0;
+    private final int ID = MAX_ID++;
     private final BackTest simulation;
     private boolean isOpen;
     private final Candlestick entry;
@@ -11,9 +13,10 @@ public class Trade {
     private boolean trailingStopArmed = false;
     private double lastProfitPercent = 0;
     private Candlestick exit;
+    private String closeReason;
 
     public Trade(BackTest simulation, Candlestick entry, double usd) {
-        if (usd <= 0) throw new IllegalArgumentException("USD must be positive to enter a trade");
+        if (usd <= 0.0) throw new IllegalArgumentException("USD must be positive to enter a trade");
         this.simulation = simulation;
         this.entry = entry;
         this.entryAmountUSD = usd;
@@ -61,11 +64,13 @@ public class Trade {
     }
 
     public void close(Candlestick exit, String reason) {
+        if (!isOpen) throw new IllegalStateException("Trade is already closed");
         this.exit = exit;
         this.isOpen = false;
         if (simulation.getGUI() != null)
             simulation.getGUI().getChartRenderer().addSignalIndicatorOn(exit.getID(), Signal.SELL);
-        System.out.println(this + (reason != null ? " (" + reason + ")" : ""));
+        this.closeReason = reason;
+        System.out.println(this);
     }
 
     /** Returns the current profit in USD */
@@ -82,8 +87,17 @@ public class Trade {
 
     @Override
     public String toString() {
-        return (getProfit() >= 0 ? Utils.ANSI_GREEN + "+" : Utils.ANSI_RED + "-")
+        return (isOpen ? "[OPEN] " : "") + (getProfit() >= 0 ? Utils.ANSI_GREEN + "+" : Utils.ANSI_RED + "-")
                 + " $" + Math.abs(MathUtils.roundTwoDec(getProfit())) + " USD "
-                + MathUtils.formatPercent(getProfitPercent()) + Utils.ANSI_RESET;
+                + MathUtils.formatPercent(getProfitPercent()) + Utils.ANSI_RESET
+                + (closeReason != null ? " (" + closeReason + ")" : "");
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) return false;
+        if (o == this) return true;
+        if (!(o instanceof Trade)) return false;
+        return ((Trade)o).ID == ID;
     }
 }

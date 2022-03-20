@@ -6,16 +6,16 @@ StratX is a crypto trading strategy testing bot made in Java. It uses historical
 
 ### TODO:
 - [ ] Parse CSV date types correctly
-- [ ] Config (Stop Loss, Take Profit, etc)
+- [ ] Config file (Stop Loss, Take Profit, etc)
 - [ ] Add indicators
+- [ ] Better downloader (Binance api?)
 
 - [ ] Backtest GUI:
   - [x] Chart with candlesticks
-  - [ ] Visualizer scanning line to show progress
-  - [ ] Visualizer showing trades
-  - [ ] ?? Visualizer showing indicators (RSI, MACD, etc)
+  - [x] Visualizer showing trades
+  - [X] Show indicators on chart (RSI, EMA, etc)
   
 - [ ] Back testing:
   - [ ] Fake account for testing trades
-  - [ ] Descriptive result output
+  - [x] Descriptive result output
 

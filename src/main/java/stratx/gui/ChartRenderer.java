@@ -7,7 +7,10 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.time.FixedMillisecond;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import stratx.StratX;
 import stratx.utils.Candlestick;
 import stratx.utils.MathUtils;
@@ -15,6 +18,7 @@ import stratx.utils.Signal;
 
 import javax.swing.*;
 import java.awt.*;
+import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -22,23 +26,39 @@ import java.util.List;
 
 public class ChartRenderer extends JPanel {
     private static final DateFormat READABLE_TIME_FORMAT = new SimpleDateFormat("MMM dd HH:mm");
-    private final Font labelFont = new Font("Arial", Font.BOLD, 16);
-    private final Font tickFont = new Font("Arial", Font.BOLD, 13);
+    public static final Font labelFont = new Font("Arial", Font.BOLD, 16);
+    public static final Font tickFont = new Font("Arial", Font.BOLD, 13);
     public static final Color darkThemeColor = new Color(0x171A21);
     public static final Color darkThemeLighterColor = new Color(0x222272F);
     private final JFreeChart candlestickChart;
+    private final ChartPanel chartPanel;
     private KeyedOHLCSeries ohlcSeries;
+    private CombinedDomainXYPlot mainPlot;
+    private DateAxis dateAxis;
+    private NumberAxis priceAxis;
+    private XYPlot candlestickSubplot;
     private CandlestickRenderer candlestickRenderer;
 
     public ChartRenderer(String title, int width, int height) {
         candlestickChart = createChart(title);
-        ChartPanel chartPanel = new ChartPanel(candlestickChart);
+        chartPanel = new ChartPanel(candlestickChart);
 
         chartPanel.setPreferredSize(new Dimension(width, height));
-        chartPanel.setMouseZoomable(false);
-        chartPanel.setMouseWheelEnabled(false);
+        chartPanel.setMouseZoomable(true);
+        chartPanel.setMouseWheelEnabled(true);
         chartPanel.setAutoscrolls(true);
         chartPanel.setPopupMenu(null);
+        mainPlot.setDomainPannable(true);
+        mainPlot.setRangePannable(true);
+
+        // Disable stupid hold ctrl to drag
+        try {
+            Field panMask = chartPanel.getClass().getDeclaredField("panMask");
+            panMask.setAccessible(true);
+            panMask.set(chartPanel, 0);
+        } catch (Exception ignored) {
+            ignored.printStackTrace();
+        }
 
         add(chartPanel, BorderLayout.CENTER);
     }
@@ -50,17 +70,11 @@ public class ChartRenderer extends JPanel {
         candlestickDataset.addSeries(ohlcSeries);
 
         // Price axis & label
-        NumberAxis priceAxis = new NumberAxis("Price");
-        priceAxis.setLabelFont(labelFont);
-        priceAxis.setTickLabelFont(tickFont);
-        priceAxis.setAutoRangeIncludesZero(false);
-        priceAxis.setNumberFormatOverride(MathUtils.COMMAS);
-        priceAxis.setLabelPaint(Color.WHITE);
-        priceAxis.setTickLabelPaint(Color.WHITE);
-        priceAxis.setAxisLinePaint(darkThemeLighterColor);
+        priceAxis = new NumberAxis("Price");
+        styleAxis(priceAxis);
 
         // Date axis & label
-        DateAxis dateAxis = new DateAxis("Date");
+        dateAxis = new DateAxis("Date");
         dateAxis.setLabelFont(labelFont);
         dateAxis.setTickLabelFont(tickFont);
         dateAxis.setDateFormatOverride(READABLE_TIME_FORMAT);
@@ -75,21 +89,15 @@ public class ChartRenderer extends JPanel {
                 false, new CustomTooltip(new SimpleDateFormat("kk:mm:ss a"), MathUtils.TWO_DEC));
         candlestickRenderer.setUseOutlinePaint(false);
 
-        // Create subplot
-        XYPlot candlestickSubplot = new XYPlot(candlestickDataset, null, priceAxis, candlestickRenderer);
+        // Create candlestick overlay
+        candlestickSubplot = new XYPlot(candlestickDataset, null, priceAxis, candlestickRenderer);
         candlestickSubplot.setBackgroundPaint(darkThemeColor);
-        candlestickSubplot.setRangePannable(false);
-        candlestickSubplot.setDomainPannable(false);
-        candlestickSubplot.setDomainGridlinePaint(darkThemeLighterColor);
-        candlestickSubplot.setRangeGridlinePaint(darkThemeLighterColor);
-        candlestickSubplot.setDomainGridlineStroke(new BasicStroke(1.0F));
-        candlestickSubplot.setRangeGridlineStroke(new BasicStroke(1.0F));
-        candlestickSubplot.setOutlinePaint(darkThemeLighterColor);
+        stylePlot(candlestickSubplot);
 
         // Create mainPlot
-        CombinedDomainXYPlot mainPlot = new CombinedDomainXYPlot(dateAxis);
-        mainPlot.setGap(100.0);
-        mainPlot.add(candlestickSubplot, 3);
+        mainPlot = new CombinedDomainXYPlot(dateAxis);
+        mainPlot.setGap(1.0);
+        mainPlot.add(candlestickSubplot, 10);
         mainPlot.setOrientation(PlotOrientation.VERTICAL);
         mainPlot.setOutlinePaint(darkThemeLighterColor);
 
@@ -98,6 +106,55 @@ public class ChartRenderer extends JPanel {
         chart.setBackgroundPaint(darkThemeColor);
 
         return chart;
+    }
+
+    public static void styleAxis(NumberAxis priceAxis) {
+        priceAxis.setLabelFont(labelFont);
+        priceAxis.setTickLabelFont(tickFont);
+        priceAxis.setAutoRangeIncludesZero(false);
+        priceAxis.setNumberFormatOverride(MathUtils.COMMAS);
+        priceAxis.setLabelPaint(Color.WHITE);
+        priceAxis.setTickLabelPaint(Color.WHITE);
+        priceAxis.setAxisLinePaint(darkThemeLighterColor);
+    }
+
+    public static void stylePlot(XYPlot plot) {
+        plot.setRangePannable(false);
+        plot.setDomainPannable(false);
+        plot.setDomainGridlinePaint(darkThemeLighterColor);
+        plot.setRangeGridlinePaint(darkThemeLighterColor);
+        plot.setBackgroundPaint(ChartRenderer.darkThemeColor);
+        plot.setDomainGridlineStroke(new BasicStroke(1.0F));
+        plot.setRangeGridlineStroke(new BasicStroke(1.0F));
+        plot.setOutlinePaint(darkThemeLighterColor);
+    }
+
+    public XYSeries addEMALine(Color color, float width) {
+        // Create ema line overlay
+        int num = candlestickSubplot.getDatasetCount() + 1;
+        XYSeriesCollection emaDataset = new XYSeriesCollection();
+        XYSeries emaSeries = new XYSeries("EMA " + num);
+        emaDataset.addSeries(emaSeries);
+
+        XYLineAndShapeRenderer emaRenderer = new XYLineAndShapeRenderer(true, false);
+        emaRenderer.setSeriesPaint(0, color);
+        emaRenderer.setSeriesStroke(0, new BasicStroke(width));
+
+        candlestickSubplot.setDataset(num, emaDataset);
+        candlestickSubplot.setRenderer(num, emaRenderer);
+        return emaSeries;
+    }
+
+    public CombinedDomainXYPlot getMainPlot() {
+        return mainPlot;
+    }
+
+    public DateAxis getDateAxis() {
+        return dateAxis;
+    }
+
+    public NumberAxis getPriceAxis() {
+        return priceAxis;
     }
 
     public void populate(List<Candlestick> data, boolean autoScale, int maxCandles) {
@@ -157,6 +214,10 @@ public class ChartRenderer extends JPanel {
                 c.getClose(),
                 c.getID()
         );
+    }
+
+    public ChartPanel getChartPanel() {
+        return chartPanel;
     }
 
     public void addSignalIndicatorOn(int candleID, Signal type) {

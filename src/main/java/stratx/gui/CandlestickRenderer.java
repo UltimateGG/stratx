@@ -216,6 +216,7 @@ public class CandlestickRenderer extends AbstractXYItemRenderer implements XYIte
     }
 
     public void drawItem(Graphics2D g2, XYItemRendererState state, Rectangle2D dataArea, PlotRenderingInfo info, XYPlot plot, ValueAxis domainAxis, ValueAxis rangeAxis, XYDataset dataset, int series, int item, CrosshairState crosshairState, int pass) {
+        if (!(dataset instanceof KeyedOHLCDataset)) return;
         PlotOrientation orientation = plot.getOrientation();
         boolean horiz;
         if (orientation == PlotOrientation.HORIZONTAL) {
