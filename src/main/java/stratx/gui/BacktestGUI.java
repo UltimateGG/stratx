@@ -13,13 +13,13 @@ public class BacktestGUI {
     private final int width;
     private final int height;
 
-    public BacktestGUI(String title, Candlestick.Interval interval, int width, int height) {
+    public BacktestGUI(String title, int width, int height) {
         this.width = width;
         this.height = height;
-        createGUI(title, interval);
+        createGUI(title);
     }
 
-    public void createGUI(String chartTitle, Candlestick.Interval interval) {
+    public void createGUI(String chartTitle) {
         frame = new JFrame("StratX Backtest");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -30,8 +30,7 @@ public class BacktestGUI {
             frame.setIconImage(icon.getImage());
         } catch (Exception ignored) {}
 
-        chartRenderer = new ChartRenderer(chartTitle.substring(chartTitle.lastIndexOf("/") + 1)
-                + " (" + interval.getValue() + " " + interval.toLongName() + ")",width, height);
+        chartRenderer = new ChartRenderer(chartTitle.substring(chartTitle.lastIndexOf("/") + 1), width, height);
         chartRenderer.setBackground(ChartRenderer.darkThemeColor);
     }
 

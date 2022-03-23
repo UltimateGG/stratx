@@ -1,7 +1,8 @@
 package stratx;
 
 import stratx.gui.BacktestGUI;
-import stratx.indicators.*;
+import stratx.indicators.GridTrading;
+import stratx.indicators.IIndicator;
 import stratx.utils.*;
 
 import java.util.ArrayList;
@@ -11,27 +12,26 @@ import java.util.List;
 public class BackTest {
     // Config
     private final String PRICE_DATA = "src/main/resources/BTC-USD_5m.json";
-    private final Candlestick.Interval INTERVAL = Candlestick.Interval.FIFTEEN_MINUTES;
     private final boolean SHOW_GUI = true;
     private final boolean AUTO_SCALE = true;
     private final int MAX_CANDLES = 200;
 
     // Trading Config
-    private final double STARTING_BALANCE = 1000;
-    private final int MAX_OPEN_TRADES = 1;
-    private final double TAKE_PROFIT = 6.50; // Percent
-    private final boolean USE_STOP_LOSS = true;
-    private final double STOP_LOSS = 1.0;
-    private final boolean USE_TRAILING_STOP = true;
-    private final double ARM_TRAILING_STOP_AT = 1.0; // Enable when we hit this % of profit
-    private final double TRAILING_STOP = 0.35;
+    private final double STARTING_BALANCE = 100;
+    private final int MAX_OPEN_TRADES = 10;
+    private final double TAKE_PROFIT = 200.50; // Percent
+    private final boolean USE_STOP_LOSS = false;
+    private final double STOP_LOSS = 1.5;
+    private final boolean USE_TRAILING_STOP = false;
+    private final double ARM_TRAILING_STOP_AT = 0.1; // Enable when we hit this % of profit
+    private final double TRAILING_STOP = 0.2;
     private final boolean SELL_BASED_ON_INDICATORS = true; // Turn off to use stop loss/take profit only
     private final boolean CLOSE_OPEN_TRADES_ON_EXIT = true;
-    private final int MIN_BUY_SIGNALS = 2; // -1 = How many indicators enabled at the time
-    private final int MIN_SELL_SIGNALS = 2;
+    private final int MIN_BUY_SIGNALS = 1; // -1 = How many indicators enabled at the time
+    private final int MIN_SELL_SIGNALS = 1;
     private final double MAX_USD_PER_TRADE = -1; // -1 For entire balance
     private final double MIN_USD_PER_TRADE = 10;
-    private final double BUY_AMOUNT_PERCENT = 75.0; // Percent of balance to buy with -1 for disabled (Uses min)
+    private final double BUY_AMOUNT_PERCENT = 1/4.0; // Percent of balance to buy with -1 for disabled (Uses min)
 
     private final Account account = new Account(STARTING_BALANCE);
     private List<Candlestick> data;
@@ -52,12 +52,11 @@ public class BackTest {
             test.account.reset();
 
             // Enabled indicators
-            test.indicators.add(new RSI(test,14, 58, 44));
-            test.indicators.add(new WMA(test, 10));
-            test.indicators.add(new EMA(test, 10));
-            //test.indicators.add(new SupportResistance(50.0D));
-            test.indicators.add(new Test());
-            //test.indicators.add(new DojiTest());
+            //test.indicators.add(new RSI(test,14, 58, 44)); // 58 44
+            //test.indicators.add(new WMA(test, 10));
+            //test.indicators.add(new EMA(test, 10));
+            //test.indicators.add(new Test());
+            test.indicators.add(new GridTrading(test));
 
             StratX.log("Running backtest #%d...", (i + 1));
 
@@ -92,7 +91,7 @@ public class BackTest {
     /** Returns the % profit this run */
     private double runTest() {
         if (SHOW_GUI) {
-            GUI = new BacktestGUI(PRICE_DATA, INTERVAL, 1800, 900);
+            GUI = new BacktestGUI(PRICE_DATA, 1800, 900);
             //gui.populate(data, AUTO_SCALE, MAX_CANDLES);
             GUI.show();
         }
