@@ -1,79 +1,39 @@
 package stratx;
 
 import stratx.gui.BacktestGUI;
-import stratx.indicators.GridTrading;
-import stratx.indicators.IIndicator;
+import stratx.strategies.GridTrading;
+import stratx.strategies.Strategy;
 import stratx.utils.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @SuppressWarnings("FieldCanBeLocal")
 public class BackTest {
     // Config
-    private final String PRICE_DATA = "src/main/resources/BTC-USD_5m.json";
+    private final String PRICE_DATA = "src/main/resources/BTC-USD_15m.json";
     private final boolean SHOW_GUI = true;
-    private final boolean AUTO_SCALE = true;
-    private final int MAX_CANDLES = 200;
-
-    // Trading Config
     private final double STARTING_BALANCE = 100;
-    private final int MAX_OPEN_TRADES = 10;
-    private final double TAKE_PROFIT = 200.50; // Percent
-    private final boolean USE_STOP_LOSS = false;
-    private final double STOP_LOSS = 1.5;
-    private final boolean USE_TRAILING_STOP = false;
-    private final double ARM_TRAILING_STOP_AT = 0.1; // Enable when we hit this % of profit
-    private final double TRAILING_STOP = 0.2;
-    private final boolean SELL_BASED_ON_INDICATORS = true; // Turn off to use stop loss/take profit only
-    private final boolean CLOSE_OPEN_TRADES_ON_EXIT = true;
-    private final int MIN_BUY_SIGNALS = 1; // -1 = How many indicators enabled at the time
-    private final int MIN_SELL_SIGNALS = 1;
-    private final double MAX_USD_PER_TRADE = -1; // -1 For entire balance
-    private final double MIN_USD_PER_TRADE = 10;
-    private final double BUY_AMOUNT_PERCENT = 1/4.0; // Percent of balance to buy with -1 for disabled (Uses min)
 
     private final Account account = new Account(STARTING_BALANCE);
     private List<Candlestick> data;
     private BacktestGUI GUI;
-    private final ArrayList<IIndicator> indicators = new ArrayList<>();
     private Candlestick currentCandle;
 
     public static void main(String... args) {
-        double bestProfit = 0.0D;
-        int bestProfitRun = 0;
-
         // Load the price data in
-        BackTest test = new BackTest();
-        test.loadData();
+        BackTest simulation = new BackTest();
+        simulation.loadData();
 
-        for (int i = 0; i < 1; i++) {
-            test.indicators.clear();
-            test.account.reset();
+        Strategy gridStrat = new GridTrading(simulation);
+        //test.indicators.add(new RSI(test,14, 58, 44));
 
-            // Enabled indicators
-            //test.indicators.add(new RSI(test,14, 58, 44)); // 58 44
-            //test.indicators.add(new WMA(test, 10));
-            //test.indicators.add(new EMA(test, 10));
-            //test.indicators.add(new Test());
-            test.indicators.add(new GridTrading(test));
-
-            StratX.log("Running backtest #%d...", (i + 1));
-
-            try {
-                double profit = test.runTest();
-                StratX.log("Backtest #%d complete, profit: %.2f", (i + 1), profit);
-                if (profit > bestProfit) {
-                    bestProfit = profit;
-                    bestProfitRun = i;
-                }
-            } catch (Exception e) {
-                StratX.error("Caught exception during backtest: ", e);
-                System.exit(1);
-            }
+        try {
+            double profit = simulation.runTest(gridStrat);
+            //StratX.log("Backtest complete, profit: %.2f", profit);
+        } catch (Exception e) {
+            StratX.error("Caught exception during backtest: ", e);
+            System.exit(1);
         }
-
-        StratX.log("Best profit: %.2f #%d", bestProfit, bestProfitRun);
     }
 
     private void loadData() {
@@ -89,10 +49,9 @@ public class BackTest {
     }
 
     /** Returns the % profit this run */
-    private double runTest() {
+    private double runTest(Strategy strategy) {
         if (SHOW_GUI) {
             GUI = new BacktestGUI(PRICE_DATA, 1800, 900);
-            //gui.populate(data, AUTO_SCALE, MAX_CANDLES);
             GUI.show();
         }
 
@@ -105,88 +64,61 @@ public class BackTest {
             currentCandle = candle;
             if (SHOW_GUI) GUI.getChartRenderer().addCandle(candle);
 
-            this.checkBuySellSignals(candle);
-            this.checkTakeProfitStopLoss(candle);
+            this.checkBuySellSignals(candle, strategy);
+            this.checkTakeProfitStopLoss(candle, strategy);
 
             index++;
         }
 
         StratX.log("-- End --");
 
-        if (CLOSE_OPEN_TRADES_ON_EXIT)
+        if (strategy.CLOSE_OPEN_TRADES_ON_EXIT)
             this.closeOpenTrades();
 
-        printResults();
+        printResults(strategy);
 
-        if (SHOW_GUI && false) { // Clean up & close GUI
-            GUI.dispose();
-            GUI = null;
-        }
+//        if (SHOW_GUI) { // Clean up & close GUI
+//            GUI.dispose();
+//            GUI = null;
+//        }
 
         return ((account.getBalance() - STARTING_BALANCE) / STARTING_BALANCE) * 100.0D;
     }
 
     // Places buy/sell orders (Signals on chart as of now)
-    private void checkBuySellSignals(Candlestick candle) {
-        int buySignals = 0;
-        int sellSignals = 0;
-        for (IIndicator indicator : indicators) {
-            indicator.update(candle);
+    private void checkBuySellSignals(Candlestick candle, Strategy strategy) {
+        strategy.update(candle);
+        Signal signal = strategy.getSignal();
 
-            Signal signal = indicator.getSignal();
-            if (signal == Signal.BUY) buySignals++;
-            if (signal == Signal.SELL) sellSignals++;
-        }
-
-        if (buySignals == 0 && sellSignals == 0) return;
-
-        // Make sure if more indicators are saying sell, don't enter a buy trade
-        if ( // TODO Option for "&& (buySignals >= sellSignals)" ? ^^
-                ((MIN_BUY_SIGNALS == -1 && buySignals >= indicators.size()) || (buySignals >= MIN_BUY_SIGNALS && MIN_BUY_SIGNALS != -1))
-                && (buySignals >= sellSignals)
-                && (account.getOpenTrades() < MAX_OPEN_TRADES)
-                && (account.getBalance() > 0)
-        ) {
-            account.openTrade(new Trade(this, candle, getBuyAmount()));
-        } else if (
-                ((MIN_SELL_SIGNALS == -1 && sellSignals >= indicators.size()) || (sellSignals >= MIN_SELL_SIGNALS && MIN_SELL_SIGNALS != -1))
-                && (SELL_BASED_ON_INDICATORS)
-                && (account.getOpenTrades() > 0)
-        ) {
+        if (signal == Signal.BUY) {
+            double amt = strategy.getBuyAmount();
+            if (amt > 0)
+                account.openTrade(new Trade(this, candle, amt));
+        } else if (signal == Signal.SELL) {
             for (Trade trade : account.getTrades()) {
                 if (!trade.isOpen()) continue;
                 account.closeTrade(trade, candle, "Indicator Signal");
+                //break; // @TODO This closes one trade and then breaks, should it close all? Config opt?
             }
         }
     }
 
-    private double getBuyAmount() {
-        double bal = account.getBalance();
-        double buy = MIN_USD_PER_TRADE;
-
-        // Percentage buy
-        if (BUY_AMOUNT_PERCENT > 0)
-            buy = bal * (BUY_AMOUNT_PERCENT / 100.0D);
-
-        return MathUtils.clampDouble(buy, Math.min(MIN_USD_PER_TRADE, bal), MAX_USD_PER_TRADE == -1 ? Double.MAX_VALUE : MAX_USD_PER_TRADE);
-    }
-
     // Take profit, stop loss, & trailing stop loss check
-    private void checkTakeProfitStopLoss(Candlestick candle) {
+    private void checkTakeProfitStopLoss(Candlestick candle, Strategy strategy) {
         if (account.getOpenTrades() == 0) return;
         for (Trade trade : account.getTrades()) {
             if (!trade.isOpen()) continue;
             double profitPercent = trade.getProfitPercent();
-            boolean takeProfit = profitPercent >= TAKE_PROFIT;
-            boolean stopLoss = USE_STOP_LOSS && profitPercent <= -STOP_LOSS;
+            boolean takeProfit = profitPercent >= strategy.TAKE_PROFIT;
+            boolean stopLoss = strategy.USE_STOP_LOSS && profitPercent <= -strategy.STOP_LOSS;
 
             if (takeProfit || stopLoss) {
                 account.closeTrade(trade, candle, takeProfit ? "Take Profit" : "Stop Loss");
-            } else if (USE_TRAILING_STOP) {
-                if (profitPercent >= ARM_TRAILING_STOP_AT) trade.setTrailingStopArmed(true);
+            } else if (strategy.USE_TRAILING_STOP) {
+                if (profitPercent >= strategy.ARM_TRAILING_STOP_AT) trade.setTrailingStopArmed(true);
                 if (trade.isTrailingStopArmed()) {
                     double profitDiff = profitPercent - trade.getLastProfitPercent();
-                    if (profitDiff <= -TRAILING_STOP) account.closeTrade(trade, candle, "Trailing Stop");
+                    if (profitDiff <= -strategy.TRAILING_STOP) account.closeTrade(trade, candle, "Trailing Stop");
                     trade.setLastProfitPercent(profitPercent);
                 }
             }
@@ -209,7 +141,8 @@ public class BackTest {
         StratX.log("-- Closed %d open trades --\n", closed);
     }
 
-    private void printResults() {
+    private void printResults(Strategy strategy) {
+        StratX.log("-- Results for strategy '%s' --", strategy.name);
         System.out.println("[!] Final Balance: $" + MathUtils.roundTwoDec(account.getBalance()) + " USD "
                 + (MathUtils.getPercent(account.getBalance() - STARTING_BALANCE, STARTING_BALANCE))
                 + " (" + account.getTrades().size() + " trade" + (account.getTrades().size() == 1 ? "" : "s") + " made)");

@@ -25,8 +25,6 @@ public class Account {
         trades.add(trade);
         balance -= trade.getEntryAmountUSD();
         openTrades++;
-
-
     }
 
     public void closeTrade(Trade trade, Candlestick exit, String reason) {

@@ -87,9 +87,11 @@ public class Trade {
 
     @Override
     public String toString() {
-        return (isOpen ? "[OPEN] " : "") + (getProfit() >= 0 ? Utils.ANSI_GREEN + "+" : Utils.ANSI_RED + "-")
+        return (isOpen ? "[OPEN] " : "")
+                + (getProfit() >= 0 ? Utils.ANSI_GREEN + "+" : Utils.ANSI_RED + "-")
                 + " $" + Math.abs(MathUtils.roundTwoDec(getProfit())) + " USD "
                 + MathUtils.formatPercent(getProfitPercent()) + Utils.ANSI_RESET
+                + (" ($" + MathUtils.roundTwoDec(entryAmountUSD) + ")")
                 + (closeReason != null ? " (" + closeReason + ")" : "");
     }
 
