@@ -58,8 +58,7 @@ public class Strategy implements IIndicator {
     public double MAX_USD_PER_TRADE = -1;
 
     /** The minimum about of USD a trade can be placed for
-     * If your balance at the time is less than this, all of your
-     * remaining balance will be used. */
+     * If your balance is less than this, no trade is placed */
     public double MIN_USD_PER_TRADE = 1.0;
 
     /** The percentage of your balance a trade will be placed for

@@ -22,7 +22,7 @@ public class BackTest {
     public static void main(String... args) {
         // Load the price data in
         BackTest simulation = new BackTest();
-        simulation.loadData();
+        simulation.loadData(simulation.PRICE_DATA);
 
         Strategy gridStrat = new GridTrading(simulation);
         //test.indicators.add(new RSI(test,14, 58, 44));
@@ -36,9 +36,9 @@ public class BackTest {
         }
     }
 
-    private void loadData() {
+    private void loadData(String file) {
         long start = System.currentTimeMillis();
-        data = Loader.loadData(PRICE_DATA);
+        data = Loader.loadData(file);
 
         if (data.size() == 0) {
             StratX.warn("Failed to load price data, exiting..");
@@ -55,6 +55,7 @@ public class BackTest {
             GUI.show();
         }
 
+        account.reset();
         System.out.println();
         StratX.log("-- Begin --");
 
@@ -92,7 +93,7 @@ public class BackTest {
 
         if (signal == Signal.BUY) {
             double amt = strategy.getBuyAmount();
-            if (amt > 0)
+            if (amt > 0 && amt >= strategy.MIN_USD_PER_TRADE)
                 account.openTrade(new Trade(this, candle, amt));
         } else if (signal == Signal.SELL) {
             for (Trade trade : account.getTrades()) {
@@ -118,7 +119,7 @@ public class BackTest {
                 if (profitPercent >= strategy.ARM_TRAILING_STOP_AT) trade.setTrailingStopArmed(true);
                 if (trade.isTrailingStopArmed()) {
                     double profitDiff = profitPercent - trade.getLastProfitPercent();
-                    if (profitDiff <= -strategy.TRAILING_STOP) account.closeTrade(trade, candle, "Trailing Stop");
+                    if (profitDiff <= -strategy.TRAILING_STOP && profitPercent > 0.0) account.closeTrade(trade, candle, "Trailing Stop");
                     trade.setLastProfitPercent(profitPercent);
                 }
             }

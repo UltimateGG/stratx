@@ -15,6 +15,8 @@ public class GridTrading extends Strategy {
         this.BUY_AMOUNT_PERCENT = 75.0;
         this.USE_STOP_LOSS = false;
         this.TAKE_PROFIT = 10.0;
+        this.USE_TRAILING_STOP = true;
+        this.TRAILING_STOP = 0.2;
     }
 
     @Override
