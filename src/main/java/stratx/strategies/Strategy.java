@@ -84,7 +84,10 @@ public class Strategy implements IIndicator {
 
     /** Called every time a candle is closed or every "tick" */
     @Override
-    public void update(Candlestick candle) {}
+    public void update(Candlestick candle) {
+        for (IIndicator indicator : indicators)
+            indicator.update(candle);
+    }
 
     /** Default implementation, uses the indicators to determine the signal
      * You may override this for custom strategies */
@@ -94,8 +97,6 @@ public class Strategy implements IIndicator {
         int sellSignals = 0;
 
         for (IIndicator indicator : indicators) {
-            indicator.update(simulation.getCurrentCandle());
-
             Signal signal = indicator.getSignal();
             if (signal == Signal.BUY) buySignals++;
             if (signal == Signal.SELL) sellSignals++;

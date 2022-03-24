@@ -3,7 +3,7 @@ package stratx.indicators;
 import stratx.utils.Candlestick;
 import stratx.utils.Signal;
 
-public class Test implements IIndicator {
+public class Test implements IIndicator { // @TODO
     private Candlestick last;
     private boolean wasLastBullish = false;
     private boolean wasLastBearish = false;

@@ -39,7 +39,7 @@ public class WMA extends Indicator implements IIndicator {
 
     @Override
     public Signal getSignal() {
-        Candlestick last = priceHistory.get(priceHistory.length() - 1);
+        Candlestick last = priceHistory.getLatest();
         double wma = getWMA();
         if (wma == -1) return Signal.HOLD;
         if (wma > last.getClose()) return Signal.SELL;

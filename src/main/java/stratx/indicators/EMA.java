@@ -37,15 +37,16 @@ public class EMA extends Indicator implements IIndicator {
 
     @Override
     public Signal getSignal() {
-        Candlestick last = priceHistory.get(priceHistory.length() - 1);
+        Candlestick last = priceHistory.getLatest();
         double ema = getEMA(last);
+        if (ema == -1) return Signal.HOLD;
         if (ema > last.getClose()) return Signal.SELL;
         if (ema < last.getClose()) return Signal.BUY;
         return Signal.HOLD;
     }
 
     private double getEMA(Candlestick current) {
-        if (priceHistory.length() < period) return current.getClose();
+        if (priceHistory.length() < period) return -1;
 
         double k = 2.0 / (period + 1.0D);
         double ema = current.getClose();

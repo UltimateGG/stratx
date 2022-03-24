@@ -28,6 +28,11 @@ public class PriceHistory {
         return history.get(index);
     }
 
+    public Candlestick getLatest() {
+        if (history.size() == 0) return null;
+        return history.get(history.size() - 1);
+    }
+
     public void clear() {
         history.clear();
     }

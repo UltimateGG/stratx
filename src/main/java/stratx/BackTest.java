@@ -166,7 +166,7 @@ public class BackTest {
     }
 
     public boolean isShowGUI() {
-        return SHOW_GUI;
+        return SHOW_GUI && GUI != null;
     }
 
     public BacktestGUI getGUI() {

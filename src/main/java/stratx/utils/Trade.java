@@ -81,6 +81,7 @@ public class Trade {
         return worthInUSDNow - worthInUSDAtEntry;
     }
 
+    /** Returns the current profit % */
     public double getProfitPercent() {
         return (getProfit() / entryAmountUSD) * 100.0D;
     }
