@@ -1,25 +1,25 @@
 ## StratX
-#### Strategy testing bot
-StratX is a crypto trading strategy testing bot made in Java. It uses historical data to backtest your strategy and in the future, I plan to make it find the best strategy settings by brute force.
-
+#### Crypto trading & strategy testing bot
+StratX is a crypto trading bot made in Java. Currently, the bot only backtests
+strategies and does not trade. There are a few modes:
+- Downloader
+  - Used to download historical data from the exchange,
+    can download huge amounts of data.
+- Backtesting
+  - Used to backtest strategies on downloaded data and show results.
+- ~~Live trading~~ (TODO)
+> Backtesting Mode
 ![Backtest GUI](gui.png "Backtest GUI")
 
 ### TODO:
+- [ ] Downloader
+  - [ ] Use the API to download LARGE data
+  - [ ] To binary file for compact storage of huge data
+  - [ ] Redo loader for new storage format
 - [ ] Config file (Stop Loss, Take Profit, etc)
+  - [ ] Config setup GUI
 - [x] Strategies (Containers for indicators)
 - [ ] Add more indicators
-- [ ] Make indicator settings configurable for plotting 
-
-- [ ] Downloader mode
-  - [ ] Better downloader (Binance api?)
-  - [ ] To binary file for compact storage of huge data
-
-- [x] Backtest GUI:
-  - [x] Chart with candlesticks
-  - [x] Visualizer showing trades
-  - [X] Show indicators on chart (RSI, EMA, etc)
-  
-- [x] Back testing:
-  - [x] Fake account for testing trades
-  - [x] Descriptive result output
+  - [ ] MACD
+- [ ] Make indicator settings configurable for plotting
 
