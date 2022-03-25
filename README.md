@@ -18,8 +18,8 @@ strategies and does not trade. There are a few modes:
   - [ ] Redo loader for new storage format
 - [ ] Config file (Stop Loss, Take Profit, etc)
   - [ ] Config setup GUI
+  - [ ] Make indicator settings configurable for plotting
 - [x] Strategies (Containers for indicators)
 - [ ] Add more indicators
   - [ ] MACD
-- [ ] Make indicator settings configurable for plotting
 

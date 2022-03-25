@@ -77,12 +77,6 @@ public class BackTest {
             this.closeOpenTrades();
 
         printResults(strategy);
-
-//        if (SHOW_GUI) { // Clean up & close GUI
-//            GUI.dispose();
-//            GUI = null;
-//        }
-
         return ((account.getBalance() - STARTING_BALANCE) / STARTING_BALANCE) * 100.0D;
     }
 
@@ -119,7 +113,9 @@ public class BackTest {
                 if (profitPercent >= strategy.ARM_TRAILING_STOP_AT) trade.setTrailingStopArmed(true);
                 if (trade.isTrailingStopArmed()) {
                     double profitDiff = profitPercent - trade.getLastProfitPercent();
-                    if (profitDiff <= -strategy.TRAILING_STOP && profitPercent > 0.0) account.closeTrade(trade, candle, "Trailing Stop");
+
+                    if (profitDiff <= -strategy.TRAILING_STOP && profitPercent > 0.0)
+                        account.closeTrade(trade, candle, "Trailing Stop");
                     trade.setLastProfitPercent(profitPercent);
                 }
             }
