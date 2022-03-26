@@ -6,7 +6,7 @@ import stratx.exceptions.InvalidCandlestickException;
 public class Candlestick {
     private static int MAX_ID = 0;
     private int ID = MAX_ID++;
-    private final String date;
+    private final long date;
     private final double open;
     private final double high;
     private final double low;
@@ -15,8 +15,8 @@ public class Candlestick {
     private Candlestick previous;
 
 
-    public Candlestick(String date, double open, double high, double low, double close, long volume) throws InvalidCandlestickException {
-        if (date == null || open < 0 || high < 0 || low < 0 || close < 0 || volume < 0)
+    public Candlestick(long date, double open, double high, double low, double close, long volume) throws InvalidCandlestickException {
+        if (date < 0 || open < 0 || high < 0 || low < 0 || close < 0 || volume < 0)
             throw new InvalidCandlestickException("Invalid candlestick values (Must be positive)");
 
         this.date = date;
@@ -47,7 +47,7 @@ public class Candlestick {
         return volume;
     }
 
-    public String getDate() {
+    public long getDate() {
         return date;
     }
 
@@ -84,7 +84,7 @@ public class Candlestick {
         if (!(obj instanceof Candlestick)) return false;
 
         Candlestick other = (Candlestick) obj;
-        return this.ID == other.getID() && this.date.equals(other.date) && this.open == other.open && this.high == other.high && this.low == other.low && this.close == other.close && this.volume == other.volume;
+        return this.ID == other.getID() && this.date == other.date && this.open == other.open && this.high == other.high && this.low == other.low && this.close == other.close && this.volume == other.volume;
     }
 
     @Override
@@ -96,7 +96,7 @@ public class Candlestick {
         return clone;
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings("unused") // @TODO Not sure if this will ever be needed anymore
     public static enum Interval {
         ONE_MINUTE("1m", 1),
         THREE_MINUTES("3m", 3),

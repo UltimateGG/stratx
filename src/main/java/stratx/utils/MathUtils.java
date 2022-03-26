@@ -5,7 +5,7 @@ import java.text.DecimalFormat;
 public class MathUtils {
 	public static final DecimalFormat TWO_DEC = new DecimalFormat("0.00");
 	public static final DecimalFormat COMMAS = new DecimalFormat("#");
-	public static final DecimalFormat COMMAS_2F = new DecimalFormat("#.00");
+	public static final DecimalFormat COMMAS_2F = new DecimalFormat("0.00");
 
 	static {
 		COMMAS.setGroupingUsed(true);
@@ -15,7 +15,7 @@ public class MathUtils {
 	}
 
 	public static String formatPercent(double value) {
-		return (value > 0 ? "+" : "") + TWO_DEC.format(value) + "%";
+		return (value > 0 ? "+" : "") + COMMAS_2F.format(value) + "%";
 	}
 
 	public static String getPercent(double value, double total) {

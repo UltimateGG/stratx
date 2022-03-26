@@ -56,9 +56,7 @@ public class ChartRenderer extends JPanel {
             Field panMask = chartPanel.getClass().getDeclaredField("panMask");
             panMask.setAccessible(true);
             panMask.set(chartPanel, 0);
-        } catch (Exception ignored) {
-            ignored.printStackTrace();
-        }
+        } catch (Exception ignored) {}
 
         add(chartPanel, BorderLayout.CENTER);
     }
@@ -207,7 +205,7 @@ public class ChartRenderer extends JPanel {
     }
 
     public void addCandle(Candlestick c) {
-        ohlcSeries.add(new FixedMillisecond(new Date(Long.parseLong(c.getDate()))),
+        ohlcSeries.add(new FixedMillisecond(new Date(c.getDate())),
                 c.getOpen(),
                 c.getHigh(),
                 c.getLow(),

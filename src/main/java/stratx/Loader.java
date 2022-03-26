@@ -1,15 +1,14 @@
 package stratx;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.sun.istack.internal.NotNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stratx.exceptions.LoaderParseException;
 import stratx.utils.Candlestick;
 
+import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,14 +38,14 @@ public class Loader {
         if (file == null || !file.exists())
             throw new LoaderParseException("File does not exist");
 
-        if (!file.getName().endsWith(".json"))
-            throw new LoaderParseException("File is not a JSON file");
+        if (!file.getName().endsWith(".strx"))
+            throw new LoaderParseException("File is not a strx file");
 
         Loader.INSTANCE = new Loader();
         Loader.INSTANCE.dataFile = file;
 
         ArrayList<Candlestick> data = new ArrayList<>();
-        Loader.INSTANCE.loadJSON(data);
+        Loader.INSTANCE.load(data);
 
         if (data.size() == 0)
             throw new LoaderParseException("Invalid price data file or format");
@@ -64,23 +63,28 @@ public class Loader {
 
     private Loader() {}
 
-    private void loadJSON(ArrayList<Candlestick> dataPoints) {
-        try {
-            JsonObject data = new JsonParser().parse(new FileReader(this.dataFile)).getAsJsonObject();
-            JsonObject opens = data.getAsJsonObject("Open");
-            JsonObject highs = data.getAsJsonObject("High");
-            JsonObject lows = data.getAsJsonObject("Low");
-            JsonObject closes = data.getAsJsonObject("Close");
-            JsonObject volumes = data.getAsJsonObject("Volume");
+    private void load(ArrayList<Candlestick> dataPoints) {
+        try (DataInputStream input = new DataInputStream(new FileInputStream(this.dataFile))) {
+            // the magic string is 'b4 ff b4 ff' + the version number
+            if (input.readUnsignedByte() != 0xb4
+                    || input.readUnsignedByte() != 0xff
+                    || input.readUnsignedByte() != 0xb4
+                    || input.readUnsignedByte() != 0xff
+                    || input.readUnsignedByte() != 0x01) {
+                throw new LoaderParseException("Not a valid strx file! (Or outdated version)");
+            }
 
-            for (String key : data.getAsJsonObject("Open").keySet()) {
+            long startTime = input.readLong();
+            long endTime = input.readLong();
+
+            while (input.available() > 0) {
                 dataPoints.add(new Candlestick(
-                        key,
-                        opens.get(key).getAsDouble(),
-                        highs.get(key).getAsDouble(),
-                        lows.get(key).getAsDouble(),
-                        closes.get(key).getAsDouble(),
-                        volumes.get(key).getAsLong()
+                        input.readLong(),
+                        input.readDouble(),
+                        input.readDouble(),
+                        input.readDouble(),
+                        input.readDouble(),
+                        input.readLong()
                 ));
             }
         } catch (Exception e) {

@@ -92,7 +92,7 @@ public class Trade {
                 + (getProfit() >= 0 ? Utils.ANSI_GREEN + "+" : Utils.ANSI_RED + "-")
                 + " $" + Math.abs(MathUtils.roundTwoDec(getProfit())) + " USD "
                 + MathUtils.formatPercent(getProfitPercent()) + Utils.ANSI_RESET
-                + (" ($" + MathUtils.roundTwoDec(entryAmountUSD) + ")")
+                + (" ($" + MathUtils.COMMAS_2F.format(entryAmountUSD) + ")")
                 + (closeReason != null ? " (" + closeReason + ")" : "");
     }
 

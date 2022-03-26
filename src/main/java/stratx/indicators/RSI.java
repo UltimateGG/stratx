@@ -77,7 +77,7 @@ public class RSI extends Indicator implements IIndicator {
                 rsiLine = addLine(COLOR, LINE_WIDTH);
                 renderer.getMainPlot().add(rsiSubplot, 2);
             } else if (overboughtLine != null) {
-                long x = Long.parseLong(candle.getDate());
+                long x = candle.getDate();
                 overboughtLine.add(x, overbought);
                 oversoldLine.add(x, oversold);
                 if (SHOW_MID_LINE) midLine.add(x, (overbought + oversold) / 2);

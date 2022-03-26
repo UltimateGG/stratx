@@ -5,12 +5,14 @@ import stratx.utils.Candlestick;
 import stratx.utils.Signal;
 
 public class GridTrading extends Strategy {
-    private final double gridSize = 40;
+    private final double gridSize; // note: 40 is best on eth
     private double baseLine = 0;
     private Signal currentSignal = Signal.HOLD;
 
-    public GridTrading(BackTest simulation) {
+    public GridTrading(BackTest simulation, double gridSize) {
         super("Grid Trading", simulation);
+        this.gridSize = gridSize;
+
         // This is where you configure the strategy
         this.BUY_AMOUNT_PERCENT = 75.0;
         this.USE_STOP_LOSS = false;

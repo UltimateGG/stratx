@@ -12,10 +12,10 @@ strategies and does not trade. There are a few modes:
 ![Backtest GUI](gui.png "Backtest GUI")
 
 ### TODO:
-- [ ] Downloader
-  - [ ] Use the API to download LARGE data
-  - [ ] To binary file for compact storage of huge data
-  - [ ] Redo loader for new storage format
+- [x] Downloader
+  - [x] Use the API to download LARGE data
+  - [x] To binary file for compact storage of huge data
+  - [x] Redo loader for new storage format
 - [ ] Config file (Stop Loss, Take Profit, etc)
   - [ ] Config setup GUI
   - [ ] Make indicator settings configurable for plotting

@@ -33,7 +33,7 @@ public class WMA extends Indicator implements IIndicator {
 
         if (simulation.isShowGUI() && SHOW_ON_CHART && priceHistory.length() >= period) {
             if (wmaLine == null) wmaLine = simulation.getGUI().getChartRenderer().addEMALine(COLOR, LINE_WIDTH);
-            else wmaLine.add(Long.parseLong(candle.getDate()), getWMA());
+            else wmaLine.add(candle.getDate(), getWMA());
         }
     }
 

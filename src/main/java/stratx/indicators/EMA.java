@@ -31,7 +31,7 @@ public class EMA extends Indicator implements IIndicator {
 
         if (simulation.isShowGUI() && SHOW_ON_CHART && priceHistory.length() >= period) {
             if (emaLine == null) emaLine = simulation.getGUI().getChartRenderer().addEMALine(COLOR, LINE_WIDTH);
-            else emaLine.add(Long.parseLong(candle.getDate()), getEMA(candle));
+            else emaLine.add(candle.getDate(), getEMA(candle));
         }
     }
 

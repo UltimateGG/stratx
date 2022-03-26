@@ -10,15 +10,18 @@ import stratx.utils.MathUtils;
 import stratx.utils.Utils;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+@SuppressWarnings("FieldCanBeLocal")
 public class Downloader {
     private final Logger LOGGER = LogManager.getLogger("Downloader");
     private final BinanceApiRestClient CLIENT = BinanceApiClientFactory.newInstance().newRestClient();
     private final int MAX_CANDLES_PER_REQUEST = 1000; // Binance limitation
     private final String DATA_FOLDER = "src/main/resources/downloader/";
+    private final int BREAK_SECONDS = 5;
 
     private boolean downloading = false;
 
@@ -27,10 +30,11 @@ public class Downloader {
     public static void main(String... args) {
         Downloader downloader = new Downloader();
 
-        String symbol = "ETHUSDT";
-        long startTime = System.currentTimeMillis() - (1000 * 60 * 60 * 24 * 365L); // 365 days history
+        String symbol = "RVNUSDT";
+        long daysHist = 365;
+        long startTime = System.currentTimeMillis() - (1000 * 60 * 60 * 24 * daysHist);
         long endTime = System.currentTimeMillis();
-        CandlestickInterval interval = CandlestickInterval.ONE_MINUTE;
+        CandlestickInterval interval = CandlestickInterval.FIFTEEN_MINUTES;
 
         try {
             downloader.download(symbol, startTime, endTime, interval);
@@ -80,15 +84,29 @@ public class Downloader {
 
         try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(fileName)))) {
             long currentStartTime = startTime;
-            output.write(9076); // magic string
+
+            // the magic string is 'b4 ff b4 ff' + the version number
+            output.writeByte(0xb4);
+            output.writeByte(0xff);
+            output.writeByte(0xb4);
+            output.writeByte(0xff);
+            output.writeByte(0x01);
+
             output.writeLong(startTime);
             output.writeLong(endTime);
 
+            List<Long> times = new ArrayList<>();
             for (int i = 0; i < numRequests; i++) {
                 List<Candlestick> downloaded = CLIENT.getCandlestickBars(symbol, interval, MAX_CANDLES_PER_REQUEST, currentStartTime, endTime);
 
                 // Date Open High Low Close Volume
                 for (Candlestick candle : downloaded) {
+                    if (times.contains(candle.getCloseTime())) {
+                        LOGGER.warn("Duplicate candle time: " + candle.getCloseTime());
+                        continue;
+                    }
+
+                    times.add(candle.getCloseTime());
                     output.writeLong(candle.getCloseTime());
                     output.writeDouble(Double.parseDouble(candle.getOpen()));
                     output.writeDouble(Double.parseDouble(candle.getHigh()));
@@ -103,6 +121,13 @@ public class Downloader {
                 if (i % 5 == 0 && i > 0) {
                     LOGGER.info("Sent {}/{} requests, {} candles", i, numRequests, MathUtils.COMMAS.format((long) i * MAX_CANDLES_PER_REQUEST));
                     System.gc();
+                }
+
+                if (i % 15 == 0 && i > 0) {
+                    LOGGER.info("Sleeping for {} seconds", BREAK_SECONDS);
+                    try {
+                        Thread.sleep(BREAK_SECONDS * 60 * 1000L);
+                    } catch (Exception ignored) {}
                 }
             }
 
@@ -124,5 +149,9 @@ public class Downloader {
         Calendar cal = Calendar.getInstance();
         cal.setTime(d);
         return String.format("%s.%s.%s", cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH), cal.get(Calendar.YEAR));
+    }
+
+    public boolean isDownloading() {
+        return downloading;
     }
 }

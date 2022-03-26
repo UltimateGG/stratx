@@ -9,9 +9,8 @@ import java.util.List;
 
 @SuppressWarnings("FieldCanBeLocal")
 public class BackTest {
-    // Config
-    private final String PRICE_DATA = "src/main/resources/BTC-USD_15m.json";
-    private final boolean SHOW_GUI = true;
+    private final String PRICE_DATA = "src/main/resources/downloader/RVNUSDT_15m_3.26.2021.strx";
+    private final boolean SHOW_GUI = false; // Disable for way faster performance
     private final double STARTING_BALANCE = 100;
 
     private final Account account = new Account(STARTING_BALANCE);
@@ -24,12 +23,10 @@ public class BackTest {
         BackTest simulation = new BackTest();
         simulation.loadData(simulation.PRICE_DATA);
 
-        Strategy gridStrat = new GridTrading(simulation);
-        //test.indicators.add(new RSI(test,14, 58, 44));
+        Strategy gridStrat = new GridTrading(simulation, 0.007142857);
 
         try {
-            double profit = simulation.runTest(gridStrat);
-            //StratX.log("Backtest complete, profit: %.2f", profit);
+            simulation.runTest(gridStrat);
         } catch (Exception e) {
             StratX.error("Caught exception during backtest: ", e);
             System.exit(1);
@@ -45,7 +42,7 @@ public class BackTest {
             System.exit(1);
         }
 
-        StratX.log("Loader has successfully loaded %d data points in %dms", data.size(), System.currentTimeMillis() - start);
+        StratX.log("Loader has successfully loaded %s data points in %dms", MathUtils.COMMAS.format(data.size()), System.currentTimeMillis() - start);
     }
 
     /** Returns the % profit this run */
@@ -56,14 +53,14 @@ public class BackTest {
         }
 
         account.reset();
+        StratX.log("Running test with a starting balance of $%s\n", MathUtils.COMMAS.format(STARTING_BALANCE));
         System.out.println();
         StratX.log("-- Begin --");
 
         int index = 0;
         for (Candlestick candle : data) {
-            if (index > 2000) break; // @todo temp
-            currentCandle = candle;
-            if (SHOW_GUI) GUI.getChartRenderer().addCandle(candle);
+            currentCandle = candle; // @TODO V so GUI doesnt lag out idk how to fix tho
+            if (SHOW_GUI && index < 50_000) GUI.getChartRenderer().addCandle(candle);
 
             this.checkBuySellSignals(candle, strategy);
             this.checkTakeProfitStopLoss(candle, strategy);
@@ -140,21 +137,38 @@ public class BackTest {
 
     private void printResults(Strategy strategy) {
         StratX.log("-- Results for strategy '%s' --", strategy.name);
-        System.out.println("[!] Final Balance: $" + MathUtils.roundTwoDec(account.getBalance()) + " USD "
-                + (MathUtils.getPercent(account.getBalance() - STARTING_BALANCE, STARTING_BALANCE))
-                + " (" + account.getTrades().size() + " trade" + (account.getTrades().size() == 1 ? "" : "s") + " made)");
+        System.out.printf("[!] Final Balance: $%s USD %s (%d trade%s made)\n",
+                MathUtils.COMMAS_2F.format(account.getBalance()),
+                MathUtils.getPercent(account.getBalance() - STARTING_BALANCE, STARTING_BALANCE),
+                account.getTrades().size(),
+                account.getTrades().size() == 1 ? "" : "s");
 
-        Trade bestTrade = null;
-        Trade worstTrade = null;
+        if (account.getTrades().size() == 0) return;
+        Trade bestTradeProfit = account.getTrades().get(0);
+        Trade bestTradePercent = account.getTrades().get(0);
+        Trade worstTradeProfit = account.getTrades().get(0);
+        Trade worstTradePercent = account.getTrades().get(0);
+        int winningTrades = 0;
+        int losingTrades = 0;
+
         for (Trade trade : account.getTrades()) {
-            if (bestTrade == null || trade.getProfitPercent() > bestTrade.getProfitPercent()) bestTrade = trade;
-            if (worstTrade == null || trade.getProfitPercent() < worstTrade.getProfitPercent()) worstTrade = trade;
+            if (trade.getProfitPercent() > bestTradePercent.getProfitPercent()) bestTradePercent = trade;
+            if (trade.getProfitPercent() < worstTradePercent.getProfitPercent()) worstTradePercent = trade;
+            if (trade.getProfit() > bestTradeProfit.getProfit()) bestTradeProfit = trade;
+            if (trade.getProfit() < worstTradeProfit.getProfit()) worstTradeProfit = trade;
+
+            if (trade.getProfitPercent() > 0.0) winningTrades++;
+            else losingTrades++;
         }
 
-        System.out.print("Best trade: ");
-        System.out.println(bestTrade);
-        System.out.print("Worst trade: ");
-        System.out.println(worstTrade);
+        System.out.printf("[!] Winning trades: %s (%s)\n", MathUtils.COMMAS.format(winningTrades), MathUtils.getPercent(winningTrades, account.getTrades().size()));
+        System.out.printf("[!] Losing trades: %s (%s)\n", MathUtils.COMMAS.format(losingTrades), MathUtils.getPercent(losingTrades, account.getTrades().size()));
+        System.out.println("\n-- Best trade --");
+        System.out.println("By $: " + bestTradeProfit);
+        System.out.println("By %: " + bestTradePercent);
+        System.out.println("-- Worst trade --");
+        System.out.println("By $: " + worstTradeProfit);
+        System.out.println("By %: " + worstTradePercent);
     }
 
     public Account getAccount() {
