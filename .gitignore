@@ -2,3 +2,5 @@
 target/
 downloader/
 logs/
+*.log
+*.log.gz
