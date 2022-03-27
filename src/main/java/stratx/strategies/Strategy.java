@@ -3,6 +3,7 @@ package stratx.strategies;
 import stratx.BackTest;
 import stratx.indicators.IIndicator;
 import stratx.utils.Candlestick;
+import stratx.utils.LogFile;
 import stratx.utils.MathUtils;
 import stratx.utils.Signal;
 
@@ -140,5 +141,23 @@ public class Strategy implements IIndicator {
 
     public ArrayList<IIndicator> getIndicators() {
         return indicators;
+    }
+
+    public void writeToLog(LogFile log) {
+        log.write("MAX_OPEN_TRADES: " + MAX_OPEN_TRADES);
+        log.write("TAKE_PROFIT: " + TAKE_PROFIT);
+        log.write("USE_STOP_LOSS: " + USE_STOP_LOSS);
+        log.write("STOP_LOSS: " + STOP_LOSS);
+        log.write("USE_TRAILING_STOP: " + USE_TRAILING_STOP);
+        log.write("ARM_TRAILING_STOP_AT: " + ARM_TRAILING_STOP_AT);
+        log.write("TRAILING_STOP: " + TRAILING_STOP);
+        log.write("SELL_BASED_ON_INDICATORS: " + SELL_BASED_ON_INDICATORS);
+        log.write("CLOSE_OPEN_TRADES_ON_EXIT: " + CLOSE_OPEN_TRADES_ON_EXIT);
+        log.write("MIN_BUY_SIGNALS: " + MIN_BUY_SIGNALS);
+        log.write("MIN_SELL_SIGNALS: " + MIN_SELL_SIGNALS);
+        log.write("MAX_USD_PER_TRADE: " + MAX_USD_PER_TRADE);
+        log.write("MIN_USD_PER_TRADE: " + MIN_USD_PER_TRADE);
+        log.write("BUY_AMOUNT_PERCENT: " + BUY_AMOUNT_PERCENT);
+        log.write("DONT_BUY_IF_SELL_GREATER: " + DONT_BUY_IF_SELL_GREATER);
     }
 }

@@ -1,17 +1,26 @@
 package stratx;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stratx.gui.BacktestGUI;
 import stratx.strategies.GridTrading;
 import stratx.strategies.Strategy;
 import stratx.utils.*;
 
+import java.util.Date;
 import java.util.List;
 
 @SuppressWarnings("FieldCanBeLocal")
 public class BackTest {
+    static { // @TODO Move to main entry point
+        org.fusesource.jansi.AnsiConsole.systemInstall();
+    }
+    private final Logger LOGGER = LogManager.getLogger("BackTest");
     private final String PRICE_DATA = "src/main/resources/downloader/RVNUSDT_15m_3.26.2021.strx";
-    private final boolean SHOW_GUI = true; // Disable for way faster performance
+    private final boolean SHOW_GUI = true;
     private final double STARTING_BALANCE = 100;
+    private final boolean LOG_TRADES = false;
+    private LogFile log;
 
     private final Account account = new Account(STARTING_BALANCE);
     private List<Candlestick> data;
@@ -19,9 +28,8 @@ public class BackTest {
     private Candlestick currentCandle;
 
     public static void main(String... args) {
-        // Load the price data in
         BackTest simulation = new BackTest();
-        simulation.loadData(simulation.PRICE_DATA);
+        simulation.loadData(simulation.PRICE_DATA); // Load the price data in
 
         Strategy gridStrat = new GridTrading(simulation, 0.007142857);
 
@@ -33,6 +41,10 @@ public class BackTest {
         }
     }
 
+    public BackTest() {
+        if (LOG_TRADES) log = new LogFile("backtest", PRICE_DATA.substring(PRICE_DATA.lastIndexOf("/") + 1));
+    }
+
     private void loadData(String file) {
         long start = System.currentTimeMillis();
         data = Loader.loadData(file);
@@ -42,16 +54,25 @@ public class BackTest {
             System.exit(1);
         }
 
-        StratX.log("Loader has successfully loaded %s data points in %dms", MathUtils.COMMAS.format(data.size()), System.currentTimeMillis() - start);
+        LOGGER.info("Loader has successfully loaded {} data points in {}ms", MathUtils.COMMAS.format(data.size()), System.currentTimeMillis() - start);
     }
 
     /** Returns the % profit this run */
     private double runTest(Strategy strategy) {
         if (SHOW_GUI) GUI = new BacktestGUI(PRICE_DATA, 1800, 900);
         account.reset();
-        StratX.log("Running test with a starting balance of $%s\n", MathUtils.COMMAS.format(STARTING_BALANCE));
-        System.out.println();
-        StratX.log("-- Begin --");
+
+        if (LOG_TRADES) {
+            log.write(System.currentTimeMillis() + "," + new Date() + ", Bal: $" + STARTING_BALANCE
+                    + ", Strategy: " + strategy.name + ", GUI: " + SHOW_GUI
+                    + ", Candles: " + data.size()
+                    + "," + PRICE_DATA.substring(PRICE_DATA.lastIndexOf('/') + 1));
+            strategy.writeToLog(log);
+            log.write("Date,MS,Type,Price,Amount,Balance,Profit,Profit%,Reason");
+        }
+
+        LOGGER.info("Running test with a starting balance of ${}\n\n", MathUtils.COMMAS.format(STARTING_BALANCE));
+        LOGGER.info("-- Begin --");
 
         int index = 0;
         for (Candlestick candle : data) {
@@ -64,7 +85,7 @@ public class BackTest {
             index++;
         }
 
-        StratX.log("-- End --");
+        LOGGER.info("-- End --");
 
         if (strategy.CLOSE_OPEN_TRADES_ON_EXIT)
             this.closeOpenTrades();
@@ -119,8 +140,8 @@ public class BackTest {
     }
 
     private void closeOpenTrades() {
-        System.out.println();
-        StratX.log("-- Closing any remaining open trades --");
+        LOGGER.info(" ");
+        LOGGER.info("-- Closing any remaining open trades --");
         int closed = 0;
 
         for (Trade trade : account.getTrades()) {
@@ -129,12 +150,12 @@ public class BackTest {
             closed++;
         }
 
-        StratX.log("-- Closed %d open trades --\n", closed);
+        LOGGER.info("-- Closed {} open trades --\n", closed);
     }
 
     private void printResults(Strategy strategy) {
-        StratX.log("-- Results for strategy '%s' --", strategy.name);
-        System.out.printf("[!] Final Balance: $%s USD %s (%d trade%s made)\n",
+        LOGGER.info("-- Results for strategy '{}' --", strategy.name);
+        LOGGER.info("[!] Final Balance: ${} USD {} ({} trade{} made)\n",
                 MathUtils.COMMAS_2F.format(account.getBalance()),
                 MathUtils.getPercent(account.getBalance() - STARTING_BALANCE, STARTING_BALANCE),
                 account.getTrades().size(),
@@ -158,14 +179,20 @@ public class BackTest {
             else losingTrades++;
         }
 
-        System.out.printf("[!] Winning trades: %s (%s)\n", MathUtils.COMMAS.format(winningTrades), MathUtils.getPercent(winningTrades, account.getTrades().size()));
-        System.out.printf("[!] Losing trades: %s (%s)\n", MathUtils.COMMAS.format(losingTrades), MathUtils.getPercent(losingTrades, account.getTrades().size()));
-        System.out.println("\n-- Best trade --");
-        System.out.println("By $: " + bestTradeProfit);
-        System.out.println("By %: " + bestTradePercent);
-        System.out.println("-- Worst trade --");
-        System.out.println("By $: " + worstTradeProfit);
-        System.out.println("By %: " + worstTradePercent);
+        LOGGER.info("[!] Winning trades: {} ({})", MathUtils.COMMAS.format(winningTrades), MathUtils.getPercent(winningTrades, account.getTrades().size()));
+        LOGGER.info("[!] Losing trades: {} ({})\n", MathUtils.COMMAS.format(losingTrades), MathUtils.getPercent(losingTrades, account.getTrades().size()));
+        LOGGER.info("-- Best trade --");
+        LOGGER.info("By $: " + bestTradeProfit);
+        LOGGER.info("By %: " + bestTradePercent);
+        LOGGER.info("-- Worst trade --");
+        LOGGER.info("By $: " + worstTradeProfit);
+        LOGGER.info("By %: " + worstTradePercent);
+        if (LOG_TRADES) log.write("[END]," + System.currentTimeMillis() + "," + new Date() + ", Total Trades: " + account.getTrades().size() + ", Bal: $" + account.getBalance()
+            + "," + MathUtils.getPercent(account.getBalance() - STARTING_BALANCE, STARTING_BALANCE));
+    }
+
+    public Logger getLogger() {
+        return LOGGER;
     }
 
     public Account getAccount() {
@@ -178,6 +205,14 @@ public class BackTest {
 
     public BacktestGUI getGUI() {
         return GUI;
+    }
+
+    public boolean shouldLogTrades() {
+        return LOG_TRADES;
+    }
+
+    public LogFile getLogFile() {
+        return log;
     }
 
     public Candlestick getCurrentCandle() {

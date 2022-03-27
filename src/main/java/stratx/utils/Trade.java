@@ -2,6 +2,8 @@ package stratx.utils;
 
 import stratx.BackTest;
 
+import java.util.Date;
+
 public class Trade {
     private static int MAX_ID = 0;
     private final int ID = MAX_ID++;
@@ -25,6 +27,9 @@ public class Trade {
 
         if (simulation.getGUI() != null)
             simulation.getGUI().getChartRenderer().addSignalIndicatorOn(entry.getID(), Signal.BUY);
+        if (simulation.shouldLogTrades())
+            simulation.getLogFile().write(new Date() + "," + System.currentTimeMillis() + ",BUY," + entryAmountUSD
+                + "," + entry.getClose() + "," + simulation.getAccount().getBalance());
     }
 
     public boolean isOpen() {
@@ -70,7 +75,11 @@ public class Trade {
         if (simulation.getGUI() != null)
             simulation.getGUI().getChartRenderer().addSignalIndicatorOn(exit.getID(), Signal.SELL);
         this.closeReason = reason;
-        System.out.println(this);
+        simulation.getLogger().info(this.toString());
+        if (simulation.shouldLogTrades())
+            simulation.getLogFile().write(new Date() + "," + System.currentTimeMillis() + ",SELL,"
+                + entryAmountUSD + "," + exit.getClose() + "," + simulation.getAccount().getBalance() + ","
+                + getProfit() + "," + getProfitPercent() + "," + closeReason);
     }
 
     /** Returns the current profit in USD */

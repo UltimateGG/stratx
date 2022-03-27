@@ -22,7 +22,7 @@ strategies and does not trade. There are a few modes:
   - [ ] MACD
 - [ ] Simulation trading mode
 - [ ] Live trading mode
-- [ ] Log files for trades
+- [X] Log files for trades
 - [x] Downloader
 - [x] Strategies (Containers for indicators)
 
