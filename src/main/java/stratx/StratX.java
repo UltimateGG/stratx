@@ -27,7 +27,7 @@ public class StratX {
         LOGGER.error(msg, e);
     }
 
-    public static void error(String msg, Object... args) {
-        LOGGER.error(String.format(msg, args));
+    public static void trace(String msg, Object... args) {
+        LOGGER.trace(msg, args);
     }
 }

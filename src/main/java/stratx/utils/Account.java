@@ -1,5 +1,7 @@
 package stratx.utils;
 
+import stratx.StratX;
+
 import java.util.ArrayList;
 
 public class Account {
@@ -22,15 +24,17 @@ public class Account {
     }
 
     public void openTrade(Trade trade) {
-        trades.add(trade);
         balance -= trade.getEntryAmountUSD();
+        trades.add(trade);
         openTrades++;
+        StratX.trace("New Balance: ${} ({} open trades)\n", MathUtils.COMMAS_2F.format(balance), openTrades);
     }
 
     public void closeTrade(Trade trade, Candlestick exit, String reason) {
-        trade.close(exit, reason);
         balance += trade.getProfit() + trade.getEntryAmountUSD();
+        trade.close(exit, reason);
         openTrades--;
+        StratX.trace("New Balance: ${} ({} open trades)\n", MathUtils.COMMAS_2F.format(balance), openTrades);
     }
 
     public ArrayList<Trade> getTrades() {

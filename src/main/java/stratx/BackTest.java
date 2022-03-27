@@ -17,10 +17,8 @@ public class BackTest {
     }
     private final Logger LOGGER = LogManager.getLogger("BackTest");
     private final String PRICE_DATA = "src/main/resources/downloader/RVNUSDT_15m_3.26.2021.strx";
-    private final boolean SHOW_GUI = true;
+    private final boolean SHOW_GUI = false;
     private final double STARTING_BALANCE = 100;
-    private final boolean LOG_TRADES = false;
-    private LogFile log;
 
     private final Account account = new Account(STARTING_BALANCE);
     private List<Candlestick> data;
@@ -41,10 +39,6 @@ public class BackTest {
         }
     }
 
-    public BackTest() {
-        if (LOG_TRADES) log = new LogFile("backtest", PRICE_DATA.substring(PRICE_DATA.lastIndexOf("/") + 1));
-    }
-
     private void loadData(String file) {
         long start = System.currentTimeMillis();
         data = Loader.loadData(file);
@@ -62,14 +56,10 @@ public class BackTest {
         if (SHOW_GUI) GUI = new BacktestGUI(PRICE_DATA, 1800, 900);
         account.reset();
 
-        if (LOG_TRADES) {
-            log.write(System.currentTimeMillis() + "," + new Date() + ", Bal: $" + STARTING_BALANCE
-                    + ", Strategy: " + strategy.name + ", GUI: " + SHOW_GUI
-                    + ", Candles: " + data.size()
-                    + "," + PRICE_DATA.substring(PRICE_DATA.lastIndexOf('/') + 1));
-            strategy.writeToLog(log);
-            log.write("Date,MS,Type,Price,Amount,Balance,Profit,Profit%,Reason");
-        }
+        StratX.trace(PRICE_DATA.substring(PRICE_DATA.lastIndexOf('/') + 1));
+        StratX.trace("Starting backtest at {} ({}) on {} candles...", new Date(), System.currentTimeMillis(), data.size());
+        StratX.trace("Starting balance: ${}", MathUtils.COMMAS.format(STARTING_BALANCE));
+        StratX.trace(strategy.toString());
 
         LOGGER.info("Running test with a starting balance of ${}\n\n", MathUtils.COMMAS.format(STARTING_BALANCE));
         LOGGER.info("-- Begin --");
@@ -155,11 +145,14 @@ public class BackTest {
 
     private void printResults(Strategy strategy) {
         LOGGER.info("-- Results for strategy '{}' --", strategy.name);
-        LOGGER.info("[!] Final Balance: ${} USD {} ({} trade{} made)\n",
-                MathUtils.COMMAS_2F.format(account.getBalance()),
+        String info = String.format("[!] Final Balance: $%s USD %s (%s trade%s made)",
+        MathUtils.COMMAS_2F.format(account.getBalance()),
                 MathUtils.getPercent(account.getBalance() - STARTING_BALANCE, STARTING_BALANCE),
                 account.getTrades().size(),
                 account.getTrades().size() == 1 ? "" : "s");
+        LOGGER.info(info);
+        StratX.trace(" ");
+        StratX.trace("-- End --\n" + info);
 
         if (account.getTrades().size() == 0) return;
         Trade bestTradeProfit = account.getTrades().get(0);
@@ -187,8 +180,8 @@ public class BackTest {
         LOGGER.info("-- Worst trade --");
         LOGGER.info("By $: " + worstTradeProfit);
         LOGGER.info("By %: " + worstTradePercent);
-        if (LOG_TRADES) log.write("[END]," + System.currentTimeMillis() + "," + new Date() + ", Total Trades: " + account.getTrades().size() + ", Bal: $" + account.getBalance()
-            + "," + MathUtils.getPercent(account.getBalance() - STARTING_BALANCE, STARTING_BALANCE));
+//        if (LOG_TRADES) log.write("[END]," + System.currentTimeMillis() + "," + new Date() + ", Total Trades: " + account.getTrades().size() + ", Bal: $" + account.getBalance()
+//            + "," + MathUtils.getPercent(account.getBalance() - STARTING_BALANCE, STARTING_BALANCE));
     }
 
     public Logger getLogger() {
@@ -207,15 +200,11 @@ public class BackTest {
         return GUI;
     }
 
-    public boolean shouldLogTrades() {
-        return LOG_TRADES;
-    }
-
-    public LogFile getLogFile() {
-        return log;
-    }
-
     public Candlestick getCurrentCandle() {
         return currentCandle;
+    }
+
+    public String getCoin() {
+        return PRICE_DATA.substring(PRICE_DATA.lastIndexOf("/") + 1).split("_")[0];
     }
 }

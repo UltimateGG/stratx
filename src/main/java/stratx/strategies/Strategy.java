@@ -3,7 +3,6 @@ package stratx.strategies;
 import stratx.BackTest;
 import stratx.indicators.IIndicator;
 import stratx.utils.Candlestick;
-import stratx.utils.LogFile;
 import stratx.utils.MathUtils;
 import stratx.utils.Signal;
 
@@ -143,21 +142,27 @@ public class Strategy implements IIndicator {
         return indicators;
     }
 
-    public void writeToLog(LogFile log) {
-        log.write("MAX_OPEN_TRADES: " + MAX_OPEN_TRADES);
-        log.write("TAKE_PROFIT: " + TAKE_PROFIT);
-        log.write("USE_STOP_LOSS: " + USE_STOP_LOSS);
-        log.write("STOP_LOSS: " + STOP_LOSS);
-        log.write("USE_TRAILING_STOP: " + USE_TRAILING_STOP);
-        log.write("ARM_TRAILING_STOP_AT: " + ARM_TRAILING_STOP_AT);
-        log.write("TRAILING_STOP: " + TRAILING_STOP);
-        log.write("SELL_BASED_ON_INDICATORS: " + SELL_BASED_ON_INDICATORS);
-        log.write("CLOSE_OPEN_TRADES_ON_EXIT: " + CLOSE_OPEN_TRADES_ON_EXIT);
-        log.write("MIN_BUY_SIGNALS: " + MIN_BUY_SIGNALS);
-        log.write("MIN_SELL_SIGNALS: " + MIN_SELL_SIGNALS);
-        log.write("MAX_USD_PER_TRADE: " + MAX_USD_PER_TRADE);
-        log.write("MIN_USD_PER_TRADE: " + MIN_USD_PER_TRADE);
-        log.write("BUY_AMOUNT_PERCENT: " + BUY_AMOUNT_PERCENT);
-        log.write("DONT_BUY_IF_SELL_GREATER: " + DONT_BUY_IF_SELL_GREATER);
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Strategy: ").append(name).append("\n");
+        sb.append("MAX_OPEN_TRADES: ").append(MAX_OPEN_TRADES).append("\n");
+        sb.append("TAKE_PROFIT: ").append(TAKE_PROFIT).append("\n");
+        sb.append("USE_STOP_LOSS: ").append(USE_STOP_LOSS).append("\n");
+        sb.append("STOP_LOSS: ").append(STOP_LOSS).append("\n");
+        sb.append("USE_TRAILING_STOP: ").append(USE_TRAILING_STOP).append("\n");
+        sb.append("ARM_TRAILING_STOP_AT: ").append(ARM_TRAILING_STOP_AT).append("\n");
+        sb.append("TRAILING_STOP: ").append(TRAILING_STOP).append("\n");
+        sb.append("SELL_BASED_ON_INDICATORS: ").append(SELL_BASED_ON_INDICATORS).append("\n");
+        sb.append("CLOSE_OPEN_TRADES_ON_EXIT: ").append(CLOSE_OPEN_TRADES_ON_EXIT).append("\n");
+        sb.append("MIN_BUY_SIGNALS: ").append(MIN_BUY_SIGNALS).append("\n");
+        sb.append("MIN_SELL_SIGNALS: ").append(MIN_SELL_SIGNALS).append("\n");
+        sb.append("MAX_USD_PER_TRADE: ").append(MAX_USD_PER_TRADE).append("\n");
+        sb.append("MIN_USD_PER_TRADE: ").append(MIN_USD_PER_TRADE).append("\n");
+        sb.append("BUY_AMOUNT_PERCENT: ").append(BUY_AMOUNT_PERCENT).append("\n");
+        sb.append("DONT_BUY_IF_SELL_GREATER: ").append(DONT_BUY_IF_SELL_GREATER).append("\n");
+        
+        return sb.toString();
     }
 }

@@ -1,8 +1,7 @@
 package stratx.utils;
 
 import stratx.BackTest;
-
-import java.util.Date;
+import stratx.StratX;
 
 public class Trade {
     private static int MAX_ID = 0;
@@ -27,9 +26,11 @@ public class Trade {
 
         if (simulation.getGUI() != null)
             simulation.getGUI().getChartRenderer().addSignalIndicatorOn(entry.getID(), Signal.BUY);
-        if (simulation.shouldLogTrades())
-            simulation.getLogFile().write(new Date() + "," + System.currentTimeMillis() + ",BUY," + entryAmountUSD
-                + "," + entry.getClose() + "," + simulation.getAccount().getBalance());
+        StratX.trace("[BUY] {} {} @ ${}/ea for ${}",
+                MathUtils.COMMAS_2F.format(this.entryAmount),
+                simulation.getCoin(),
+                MathUtils.round(entry.getClose(), 4),
+                MathUtils.COMMAS_2F.format(usd));
     }
 
     public boolean isOpen() {
@@ -76,10 +77,13 @@ public class Trade {
             simulation.getGUI().getChartRenderer().addSignalIndicatorOn(exit.getID(), Signal.SELL);
         this.closeReason = reason;
         simulation.getLogger().info(this.toString());
-        if (simulation.shouldLogTrades())
-            simulation.getLogFile().write(new Date() + "," + System.currentTimeMillis() + ",SELL,"
-                + entryAmountUSD + "," + exit.getClose() + "," + simulation.getAccount().getBalance() + ","
-                + getProfit() + "," + getProfitPercent() + "," + closeReason);
+        StratX.trace("[SELL] ({}) {} {} @ ${}/ea for profit of ${} ({}%)",
+                reason,
+                MathUtils.COMMAS_2F.format(this.entryAmount),
+                simulation.getCoin(),
+                MathUtils.round(exit.getClose(), 4),
+                MathUtils.COMMAS_2F.format(getProfit()),
+                MathUtils.COMMAS_2F.format(getProfitPercent()));
     }
 
     /** Returns the current profit in USD */
