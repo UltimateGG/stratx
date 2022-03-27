@@ -8,18 +8,21 @@ strategies and does not trade. There are a few modes:
 - Backtesting
   - Used to backtest strategies on downloaded data and show results.
 - ~~Live trading~~ (TODO)
+- ~~Simulation~~ (TODO)
 > Backtesting Mode
 ![Backtest GUI](gui.png "Backtest GUI")
 
 ### TODO:
-- [x] Downloader
-  - [x] Use the API to download LARGE data
-  - [x] To binary file for compact storage of huge data
-  - [x] Redo loader for new storage format
+
+- [ ] Broker fees & taxes settings
 - [ ] Config file (Stop Loss, Take Profit, etc)
   - [ ] Config setup GUI
   - [ ] Make indicator settings configurable for plotting
-- [x] Strategies (Containers for indicators)
 - [ ] Add more indicators
   - [ ] MACD
+- [ ] Simulation trading mode
+- [ ] Live trading mode
+- [ ] Log files for trades
+- [x] Downloader
+- [x] Strategies (Containers for indicators)
 

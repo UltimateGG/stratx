@@ -1,11 +1,8 @@
 package stratx.gui;
 
-import stratx.utils.Candlestick;
-
 import javax.swing.*;
 import java.io.File;
 import java.net.URL;
-import java.util.List;
 
 public class BacktestGUI {
     private ChartRenderer chartRenderer;
@@ -32,10 +29,6 @@ public class BacktestGUI {
 
         chartRenderer = new ChartRenderer(chartTitle.substring(chartTitle.lastIndexOf("/") + 1), width, height);
         chartRenderer.setBackground(ChartRenderer.darkThemeColor);
-    }
-
-    public void populate(List<Candlestick> data, boolean autoScale, int maxCandles) {
-        chartRenderer.populate(data, autoScale, maxCandles);
     }
 
     public void show() {

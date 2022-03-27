@@ -10,7 +10,7 @@ import java.util.List;
 @SuppressWarnings("FieldCanBeLocal")
 public class BackTest {
     private final String PRICE_DATA = "src/main/resources/downloader/RVNUSDT_15m_3.26.2021.strx";
-    private final boolean SHOW_GUI = false; // Disable for way faster performance
+    private final boolean SHOW_GUI = true; // Disable for way faster performance
     private final double STARTING_BALANCE = 100;
 
     private final Account account = new Account(STARTING_BALANCE);
@@ -47,11 +47,7 @@ public class BackTest {
 
     /** Returns the % profit this run */
     private double runTest(Strategy strategy) {
-        if (SHOW_GUI) {
-            GUI = new BacktestGUI(PRICE_DATA, 1800, 900);
-            GUI.show();
-        }
-
+        if (SHOW_GUI) GUI = new BacktestGUI(PRICE_DATA, 1800, 900);
         account.reset();
         StratX.log("Running test with a starting balance of $%s\n", MathUtils.COMMAS.format(STARTING_BALANCE));
         System.out.println();
@@ -59,8 +55,8 @@ public class BackTest {
 
         int index = 0;
         for (Candlestick candle : data) {
-            currentCandle = candle; // @TODO V so GUI doesnt lag out idk how to fix tho
-            if (SHOW_GUI && index < 50_000) GUI.getChartRenderer().addCandle(candle);
+            currentCandle = candle;
+            if (SHOW_GUI) GUI.getChartRenderer().addCandle(candle, index == data.size() - 1);
 
             this.checkBuySellSignals(candle, strategy);
             this.checkTakeProfitStopLoss(candle, strategy);
@@ -74,6 +70,7 @@ public class BackTest {
             this.closeOpenTrades();
 
         printResults(strategy);
+        if (SHOW_GUI) GUI.show(); // Show GUI at end for performance reasons and candles arent added to chart until end anyways
         return ((account.getBalance() - STARTING_BALANCE) / STARTING_BALANCE) * 100.0D;
     }
 

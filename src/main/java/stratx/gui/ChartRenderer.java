@@ -11,7 +11,6 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.time.FixedMillisecond;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import stratx.StratX;
 import stratx.utils.Candlestick;
 import stratx.utils.MathUtils;
 import stratx.utils.Signal;
@@ -21,8 +20,6 @@ import java.awt.*;
 import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
 
 public class ChartRenderer extends JPanel {
     private static final DateFormat READABLE_TIME_FORMAT = new SimpleDateFormat("MMM dd HH:mm");
@@ -155,62 +152,18 @@ public class ChartRenderer extends JPanel {
         return priceAxis;
     }
 
-    public void populate(List<Candlestick> data, boolean autoScale, int maxCandles) {
-        int size = data.size();
-        int scale = autoScale ? Math.max(1, size / maxCandles) : 1;
-        Candlestick previous = null;
-
-        if (scale > 1) {
-            StratX.log("Scaling chart by %d", scale);
-            this.setTitle(this.getTitle() + " (Scaled x" + scale + ")");
-        }
-
-        // Populate the chart
-        for (int i = 0; i < size; i += scale) {
-            if (i == 0) { // First candle, has no previous
-                this.addCandle(data.get(i));
-                continue;
-            }
-
-            if (scale == 1) {
-                this.addCandle(data.get(i));
-                continue;
-            }
-
-            // Collapse the data we skipped into a single candle
-            double maxOpen = data.get(i).getOpen();
-            double maxHigh = data.get(i).getHigh();
-            double maxLow = data.get(i).getLow();
-            double maxClose = data.get(i).getClose();
-            long volume = data.get(i).getVolume();
-
-            for (int j = i - scale; j < i; j++) {
-                maxHigh = Math.max(maxHigh, data.get(j).getHigh());
-                maxLow = Math.min(maxLow, data.get(j).getLow());
-                volume += data.get(j).getVolume();
-            }
-
-            Candlestick candle = new Candlestick(
-                    data.get(i).getDate(),
-                    maxOpen,
-                    maxHigh,
-                    maxLow,
-                    maxClose,
-                    volume
-            );
-            candle.setPrevious(previous);
-            this.addCandle(candle);
-            previous = candle;
-        }
+    private void addCandle(Candlestick candle) {
+        this.addCandle(candle, true);
     }
 
-    public void addCandle(Candlestick c) {
-        ohlcSeries.add(new FixedMillisecond(new Date(c.getDate())),
+    public void addCandle(Candlestick c, boolean isLast) {
+        ohlcSeries.add(new FixedMillisecond(c.getDate()),
                 c.getOpen(),
                 c.getHigh(),
                 c.getLow(),
                 c.getClose(),
-                c.getID()
+                c.getID(),
+                isLast
         );
     }
 
