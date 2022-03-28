@@ -7,10 +7,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import stratx.BackTest;
 import stratx.gui.ChartRenderer;
-import stratx.utils.Candlestick;
-import stratx.utils.MathUtils;
-import stratx.utils.PriceHistory;
-import stratx.utils.Signal;
+import stratx.utils.*;
 
 import java.awt.*;
 
@@ -29,14 +26,13 @@ public class RSI extends Indicator implements IIndicator {
 
     private final PriceHistory priceHistory;
 
-    // @TODO make this configurable
-    private final boolean SHOW_ON_CHART = true;
-    private final boolean SHOW_MID_LINE = true;
-    private final Color COLOR = new Color(0x7E44F1);
-    private final Color OVERBOUGHT_COLOR = new Color(0xF33232);
-    private final Color OVERSOLD_COLOR = new Color(0x36F54F);
-    private final Color MIDDLE_COLOR = new Color(0x6C6C6C);
-    private final float LINE_WIDTH = 1.5F;
+    private boolean SHOW_ON_CHART = true;
+    private boolean SHOW_MID_LINE = true;
+    private Color COLOR = new Color(0x7E44F1);
+    private Color OVERBOUGHT_COLOR = new Color(0xF33232);
+    private Color OVERSOLD_COLOR = new Color(0x36F54F);
+    private Color MIDDLE_COLOR = new Color(0x6C6C6C);
+    private float LINE_WIDTH = 1.5F;
 
     public RSI(BackTest simulation, int period, double overbought, double oversold) {
         super(simulation);
@@ -44,6 +40,7 @@ public class RSI extends Indicator implements IIndicator {
         this.overbought = overbought;
         this.oversold = oversold;
         this.priceHistory = new PriceHistory(period);
+        this.loadSettings(simulation.getConfig());
     }
 
     @Override
@@ -99,6 +96,7 @@ public class RSI extends Indicator implements IIndicator {
 
         rsiSubplot.setDataset(num, dataset);
         rsiSubplot.setRenderer(num, renderer);
+        simulation.addLock(series);
         return series;
     }
 
@@ -124,5 +122,15 @@ public class RSI extends Indicator implements IIndicator {
 
         double rs = (up / period) / (down / period);
         return MathUtils.clampDouble(100 - (100 / (1 + rs)), 0.0D, 100.0D);
+    }
+
+    public void loadSettings(Configuration config) {
+        SHOW_ON_CHART = config.getBoolean("indicators.rsi.show-on-chart", SHOW_ON_CHART);
+        SHOW_MID_LINE = config.getBoolean("indicators.rsi.midline", SHOW_MID_LINE);
+        COLOR = config.getColor("indicators.rsi.color", COLOR);
+        OVERBOUGHT_COLOR = config.getColor("indicators.rsi.overbought-color", OVERBOUGHT_COLOR);
+        OVERSOLD_COLOR = config.getColor("indicators.rsi.oversold-color", OVERSOLD_COLOR);
+        MIDDLE_COLOR = config.getColor("indicators.rsi.midline-color", MIDDLE_COLOR);
+        LINE_WIDTH = (float) config.getDouble("indicators.rsi.line-width", LINE_WIDTH);
     }
 }

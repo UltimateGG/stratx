@@ -1,0 +1,17 @@
+backtest:
+    starting-balance: 100.0
+    show-signals: true
+
+indicators:
+    ema:
+        show-on-chart: true
+        color: 0x0F74E7
+        line-width: 2.0
+    rsi:
+        show-on-chart: true
+        midline: true
+        color: 0x7E44F1
+        overbought-color: 0xF33232
+        oversold-color: 0x36F54F
+        midline-color: 0x6C6C6C
+        line-width: 1.5

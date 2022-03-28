@@ -3,6 +3,7 @@ package stratx.strategies;
 import stratx.BackTest;
 import stratx.indicators.IIndicator;
 import stratx.utils.Candlestick;
+import stratx.utils.Configuration;
 import stratx.utils.MathUtils;
 import stratx.utils.Signal;
 
@@ -15,6 +16,9 @@ public class Strategy implements IIndicator {
 
     /** The max open trade positions at once */
     public int MAX_OPEN_TRADES = 1;
+
+    /** Whether to use take profit or not */
+    public boolean USE_TAKE_PROFIT = true;
 
     /** The percent of profit a position will sell at if greater than or equal to that percent [0-100]% */
     public double TAKE_PROFIT = 5.0;
@@ -74,12 +78,28 @@ public class Strategy implements IIndicator {
 
     private final BackTest simulation;
     private final ArrayList<IIndicator> indicators = new ArrayList<>();
+    private String configName;
 
 
     public Strategy(String name, BackTest simulation, IIndicator... indicators) {
+        this(name, simulation, name.toLowerCase().replaceAll(" ", "_") + ".yml", indicators);
+    }
+
+    public Strategy(String name, BackTest simulation, String configFile, IIndicator... indicators) {
         this.name = name;
         this.simulation = simulation;
         this.indicators.addAll(Arrays.asList(indicators));
+        this.configName = configFile;
+
+        simulation.getLogger().info("Loading strategy settings from " + configFile);
+        Configuration config = new Configuration("config/strategies/" + configFile);
+        if (!config.exists()) {
+            simulation.getLogger().info("Could not find or load config, using built-in settings");
+            configName = "(built-ins)";
+            return;
+        }
+
+        loadSettings(config);
     }
 
     /** Called every time a candle is closed or every "tick" */
@@ -130,6 +150,27 @@ public class Strategy implements IIndicator {
         return MathUtils.clampDouble(buy, Math.min(MIN_USD_PER_TRADE, bal), MAX_USD_PER_TRADE == -1 ? Double.MAX_VALUE : MAX_USD_PER_TRADE);
     }
 
+    private void loadSettings(Configuration config) {
+        MAX_OPEN_TRADES = config.getInt("max-open-trades", MAX_OPEN_TRADES);
+        CLOSE_OPEN_TRADES_ON_EXIT = config.getBoolean("close-open-trades-on-exit", CLOSE_OPEN_TRADES_ON_EXIT);
+        USE_TAKE_PROFIT = config.getBoolean("take-profit.enabled", USE_TAKE_PROFIT);
+        TAKE_PROFIT = config.getDouble("take-profit.percent", TAKE_PROFIT);
+        USE_STOP_LOSS = config.getBoolean("stop-loss.enabled", USE_STOP_LOSS);
+        STOP_LOSS = config.getDouble("stop-loss.percent", STOP_LOSS);
+        USE_TRAILING_STOP = config.getBoolean("trailing-stop.enabled", USE_TRAILING_STOP);
+        ARM_TRAILING_STOP_AT = config.getDouble("trailing-stop.arm-at", ARM_TRAILING_STOP_AT);
+        TRAILING_STOP = config.getDouble("trailing-stop.percent", TRAILING_STOP);
+        MIN_BUY_SIGNALS = config.getInt("buy.min-signals", MIN_BUY_SIGNALS);
+        BUY_AMOUNT_PERCENT = config.getDouble("buy.percent-of-bal", BUY_AMOUNT_PERCENT);
+        DONT_BUY_IF_SELL_GREATER = config.getBoolean("buy.dont-buy-if-more-sell-signals", DONT_BUY_IF_SELL_GREATER);
+        MIN_USD_PER_TRADE = config.getDouble("buy.min-usd", MIN_USD_PER_TRADE);
+        MAX_USD_PER_TRADE = config.getDouble("buy.max-usd", MAX_USD_PER_TRADE);
+        MIN_SELL_SIGNALS = config.getInt("sell.min-signals", MIN_SELL_SIGNALS);
+        SELL_BASED_ON_INDICATORS = config.getBoolean("sell.based-on-indicators", SELL_BASED_ON_INDICATORS);
+
+        simulation.getLogger().info("Successfully loaded strategy settings");
+    }
+
     public void addIndicator(IIndicator indicator) {
         indicators.add(indicator);
     }
@@ -146,8 +187,10 @@ public class Strategy implements IIndicator {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
+        sb.append("Config File: ").append(configName).append("\n");
         sb.append("Strategy: ").append(name).append("\n");
         sb.append("MAX_OPEN_TRADES: ").append(MAX_OPEN_TRADES).append("\n");
+        sb.append("USE_TAKE_PROFIT: ").append(USE_TAKE_PROFIT).append("\n");
         sb.append("TAKE_PROFIT: ").append(TAKE_PROFIT).append("\n");
         sb.append("USE_STOP_LOSS: ").append(USE_STOP_LOSS).append("\n");
         sb.append("STOP_LOSS: ").append(STOP_LOSS).append("\n");

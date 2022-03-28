@@ -1,5 +1,7 @@
 package stratx.gui;
 
+import stratx.BackTest;
+
 import javax.swing.*;
 import java.io.File;
 import java.net.URL;
@@ -10,13 +12,13 @@ public class BacktestGUI {
     private final int width;
     private final int height;
 
-    public BacktestGUI(String title, int width, int height) {
+    public BacktestGUI(String title, BackTest simulation, int width, int height) {
         this.width = width;
         this.height = height;
-        createGUI(title);
+        createGUI(title, simulation);
     }
 
-    public void createGUI(String chartTitle) {
+    public void createGUI(String chartTitle, BackTest simulation) {
         frame = new JFrame("StratX Backtest");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -27,7 +29,7 @@ public class BacktestGUI {
             frame.setIconImage(icon.getImage());
         } catch (Exception ignored) {}
 
-        chartRenderer = new ChartRenderer(chartTitle.substring(chartTitle.lastIndexOf("/") + 1), width, height);
+        chartRenderer = new ChartRenderer(chartTitle.substring(chartTitle.lastIndexOf("/") + 1), simulation, width, height);
         chartRenderer.setBackground(ChartRenderer.darkThemeColor);
     }
 

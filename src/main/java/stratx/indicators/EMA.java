@@ -3,6 +3,7 @@ package stratx.indicators;
 import org.jfree.data.xy.XYSeries;
 import stratx.BackTest;
 import stratx.utils.Candlestick;
+import stratx.utils.Configuration;
 import stratx.utils.PriceHistory;
 import stratx.utils.Signal;
 
@@ -10,19 +11,19 @@ import java.awt.*;
 
 public class EMA extends Indicator implements IIndicator {
     private final int period;
-
-    // @TODO make this configurable
-    private final boolean SHOW_ON_CHART = true;
-    private final Color COLOR = new Color(0x0F74E7);
-    private final float LINE_WIDTH = 2.0F;
-
     private final PriceHistory priceHistory;
     private XYSeries emaLine;
+
+    private boolean SHOW_ON_CHART = true;
+    private Color COLOR = new Color(0x0F74E7);
+    private float LINE_WIDTH = 2.0F;
+
 
     public EMA(BackTest simulation, int period) {
         super(simulation);
         this.period = period;
         this.priceHistory = new PriceHistory(period);
+        this.loadSettings(simulation.getConfig());
     }
 
     @Override
@@ -53,5 +54,11 @@ public class EMA extends Indicator implements IIndicator {
         for (Candlestick candle : priceHistory.get())
             ema += k * (candle.getClose() - ema);
         return ema;
+    }
+
+    public void loadSettings(Configuration config) {
+        SHOW_ON_CHART = config.getBoolean("indicators.ema.show-on-chart", SHOW_ON_CHART);
+        COLOR = config.getColor("indicators.ema.color", COLOR);
+        LINE_WIDTH = (float) config.getDouble("indicators.ema.line-width", LINE_WIDTH);
     }
 }

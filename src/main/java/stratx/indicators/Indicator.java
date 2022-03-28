@@ -1,5 +1,6 @@
 package stratx.indicators;
 
+
 import stratx.BackTest;
 
 public class Indicator {

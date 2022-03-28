@@ -20,7 +20,7 @@ public class StratX {
     }
 
     public static void warn(String msg, Object... args) {
-        LOGGER.warn(String.format(msg, args));
+        LOGGER.warn(msg, args);
     }
 
     public static void error(String msg, Throwable e) {

@@ -14,10 +14,9 @@ strategies and does not trade. There are a few modes:
 
 ### TODO:
 
-- [ ] Broker fees & taxes settings
-- [ ] Config file (Stop Loss, Take Profit, etc)
-  - [ ] Config setup GUI
-  - [ ] Make indicator settings configurable for plotting
+- [x] Config file (Stop Loss, Take Profit, etc)
+  - [ ] Config setup GUI?
+  - [X] Make indicator settings configurable for plotting
 - [ ] Add more indicators
   - [ ] MACD
 - [ ] Simulation trading mode

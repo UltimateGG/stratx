@@ -11,6 +11,7 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.time.FixedMillisecond;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import stratx.BackTest;
 import stratx.utils.Candlestick;
 import stratx.utils.MathUtils;
 import stratx.utils.Signal;
@@ -35,10 +36,12 @@ public class ChartRenderer extends JPanel {
     private NumberAxis priceAxis;
     private XYPlot candlestickSubplot;
     private CandlestickRenderer candlestickRenderer;
+    private final BackTest simulation;
 
-    public ChartRenderer(String title, int width, int height) {
+    public ChartRenderer(String title, BackTest simulation, int width, int height) {
         candlestickChart = createChart(title);
         chartPanel = new ChartPanel(candlestickChart);
+        this.simulation = simulation;
 
         chartPanel.setPreferredSize(new Dimension(width, height));
         chartPanel.setMouseZoomable(true);
@@ -137,6 +140,7 @@ public class ChartRenderer extends JPanel {
 
         candlestickSubplot.setDataset(num, emaDataset);
         candlestickSubplot.setRenderer(num, emaRenderer);
+        simulation.addLock(emaSeries);
         return emaSeries;
     }
 

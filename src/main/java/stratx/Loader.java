@@ -15,7 +15,6 @@ import java.util.List;
 
 public class Loader {
     private static Loader INSTANCE;
-    private static final boolean HEIKIN_ASHI_CANDLES = true;
     private File dataFile;
     private static final Logger LOGGER = LogManager.getLogger("Loader");
 
@@ -50,13 +49,6 @@ public class Loader {
         if (data.size() == 0)
             throw new LoaderParseException("Invalid price data file or format");
 
-        if (HEIKIN_ASHI_CANDLES && data.size() > 1) {
-            for (int i = 0; i < data.size(); i++) {
-                if (i == 0) continue;
-                data.get(i).setPrevious(data.get(i - 1));
-            }
-        }
-
         System.gc(); // Clear all strings from loading the file
         return Collections.unmodifiableList(data);
     }
@@ -76,16 +68,21 @@ public class Loader {
 
             long startTime = input.readLong();
             long endTime = input.readLong();
+            Candlestick previous = null;
 
             while (input.available() > 0) {
-                dataPoints.add(new Candlestick(
+                Candlestick candle = new Candlestick(
                         input.readLong(),
                         input.readDouble(),
                         input.readDouble(),
                         input.readDouble(),
                         input.readDouble(),
-                        input.readLong()
-                ));
+                        input.readLong(),
+                        previous
+                );
+
+                dataPoints.add(candle);
+                previous = candle;
             }
         } catch (Exception e) {
             LOGGER.error("Error while loading data: ", e);

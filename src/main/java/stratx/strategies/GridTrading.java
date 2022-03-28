@@ -10,15 +10,12 @@ public class GridTrading extends Strategy {
     private Signal currentSignal = Signal.HOLD;
 
     public GridTrading(BackTest simulation, double gridSize) {
-        super("Grid Trading", simulation);
-        this.gridSize = gridSize;
+        this(simulation, "grid.yml", gridSize);
+    }
 
-        // This is where you configure the strategy
-        this.BUY_AMOUNT_PERCENT = 75.0;
-        this.USE_STOP_LOSS = false;
-        this.TAKE_PROFIT = 10.0;
-        this.USE_TRAILING_STOP = true;
-        this.TRAILING_STOP = 0.2;
+    public GridTrading(BackTest simulation, String configFile, double gridSize) {
+        super("Grid Trading", simulation, configFile);
+        this.gridSize = gridSize;
     }
 
     @Override

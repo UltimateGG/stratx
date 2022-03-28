@@ -2,28 +2,31 @@ package stratx;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jfree.data.xy.XYSeries;
 import stratx.gui.BacktestGUI;
 import stratx.strategies.GridTrading;
 import stratx.strategies.Strategy;
 import stratx.utils.*;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 @SuppressWarnings("FieldCanBeLocal")
 public class BackTest {
-    static { // @TODO Move to main entry point
-        org.fusesource.jansi.AnsiConsole.systemInstall();
-    }
+    static { org.fusesource.jansi.AnsiConsole.systemInstall(); } // @TODO Move to main entry point
     private final Logger LOGGER = LogManager.getLogger("BackTest");
+    private final Configuration CONFIG = new Configuration("config/config.yml");
     private final String PRICE_DATA = "src/main/resources/downloader/RVNUSDT_15m_3.26.2021.strx";
-    private final boolean SHOW_GUI = false;
-    private final double STARTING_BALANCE = 100;
+    private final double STARTING_BALANCE = CONFIG.getDouble("backtest.starting-balance", 100.0);
+    private final boolean SHOW_SIGNALS = CONFIG.getBoolean("backtest.show-signals", true);
+    private final boolean SHOW_GUI = true;
 
-    private final Account account = new Account(STARTING_BALANCE);
+    private final Account ACCOUNT = new Account(STARTING_BALANCE);
     private List<Candlestick> data;
     private BacktestGUI GUI;
     private Candlestick currentCandle;
+    private final ArrayList<XYSeries> INDICATOR_LOCKS = new ArrayList<>();
 
     public static void main(String... args) {
         BackTest simulation = new BackTest();
@@ -53,8 +56,8 @@ public class BackTest {
 
     /** Returns the % profit this run */
     private double runTest(Strategy strategy) {
-        if (SHOW_GUI) GUI = new BacktestGUI(PRICE_DATA, 1800, 900);
-        account.reset();
+        if (SHOW_GUI) GUI = new BacktestGUI(PRICE_DATA, this, 1800, 900);
+        ACCOUNT.reset();
 
         StratX.trace(PRICE_DATA.substring(PRICE_DATA.lastIndexOf('/') + 1));
         StratX.trace("Starting backtest at {} ({}) on {} candles...", new Date(), System.currentTimeMillis(), data.size());
@@ -66,13 +69,23 @@ public class BackTest {
 
         int index = 0;
         for (Candlestick candle : data) {
+            boolean isLast = index == data.size() - 1;
             currentCandle = candle;
-            if (SHOW_GUI) GUI.getChartRenderer().addCandle(candle, index == data.size() - 1);
+
+            if (SHOW_GUI) GUI.getChartRenderer().addCandle(candle, isLast);
 
             this.checkBuySellSignals(candle, strategy);
             this.checkTakeProfitStopLoss(candle, strategy);
 
+            if (index % 1000 == 0 && index > 0)
+                LOGGER.info("-- Backtest: {}% --", Math.round((double)index / data.size() * 100.0D));
+
             index++;
+        }
+
+        for (XYSeries plot : INDICATOR_LOCKS) {
+            plot.setNotify(true);
+            plot.fireSeriesChanged();
         }
 
         LOGGER.info("-- End --");
@@ -82,7 +95,7 @@ public class BackTest {
 
         printResults(strategy);
         if (SHOW_GUI) GUI.show(); // Show GUI at end for performance reasons and candles arent added to chart until end anyways
-        return ((account.getBalance() - STARTING_BALANCE) / STARTING_BALANCE) * 100.0D;
+        return ((ACCOUNT.getBalance() - STARTING_BALANCE) / STARTING_BALANCE) * 100.0D;
     }
 
     // Places buy/sell orders (Signals on chart as of now)
@@ -93,11 +106,11 @@ public class BackTest {
         if (signal == Signal.BUY) {
             double amt = strategy.getBuyAmount();
             if (amt > 0 && amt >= strategy.MIN_USD_PER_TRADE)
-                account.openTrade(new Trade(this, candle, amt));
+                ACCOUNT.openTrade(new Trade(this, candle, amt));
         } else if (signal == Signal.SELL) {
-            for (Trade trade : account.getTrades()) {
+            for (Trade trade : ACCOUNT.getTrades()) {
                 if (!trade.isOpen()) continue;
-                account.closeTrade(trade, candle, "Indicator Signal");
+                ACCOUNT.closeTrade(trade, candle, "Indicator Signal");
                 //break; // @TODO This closes one trade and then breaks, should it close all? Config opt?
             }
         }
@@ -105,22 +118,22 @@ public class BackTest {
 
     // Take profit, stop loss, & trailing stop loss check
     private void checkTakeProfitStopLoss(Candlestick candle, Strategy strategy) {
-        if (account.getOpenTrades() == 0) return;
-        for (Trade trade : account.getTrades()) {
+        if (ACCOUNT.getOpenTrades() == 0) return;
+        for (Trade trade : ACCOUNT.getTrades()) {
             if (!trade.isOpen()) continue;
             double profitPercent = trade.getProfitPercent();
-            boolean takeProfit = profitPercent >= strategy.TAKE_PROFIT;
+            boolean takeProfit = strategy.USE_TAKE_PROFIT && profitPercent >= strategy.TAKE_PROFIT;
             boolean stopLoss = strategy.USE_STOP_LOSS && profitPercent <= -strategy.STOP_LOSS;
 
             if (takeProfit || stopLoss) {
-                account.closeTrade(trade, candle, takeProfit ? "Take Profit" : "Stop Loss");
+                ACCOUNT.closeTrade(trade, candle, takeProfit ? "Take Profit" : "Stop Loss");
             } else if (strategy.USE_TRAILING_STOP) {
                 if (profitPercent >= strategy.ARM_TRAILING_STOP_AT) trade.setTrailingStopArmed(true);
                 if (trade.isTrailingStopArmed()) {
                     double profitDiff = profitPercent - trade.getLastProfitPercent();
 
                     if (profitDiff <= -strategy.TRAILING_STOP && profitPercent > 0.0)
-                        account.closeTrade(trade, candle, "Trailing Stop");
+                        ACCOUNT.closeTrade(trade, candle, "Trailing Stop");
                     trade.setLastProfitPercent(profitPercent);
                 }
             }
@@ -132,37 +145,40 @@ public class BackTest {
     private void closeOpenTrades() {
         LOGGER.info(" ");
         LOGGER.info("-- Closing any remaining open trades --");
+        StratX.trace("-- Closing any remaining open trades --");
         int closed = 0;
 
-        for (Trade trade : account.getTrades()) {
+        for (Trade trade : ACCOUNT.getTrades()) {
             if (!trade.isOpen()) continue;
-            account.closeTrade(trade, currentCandle, "Closing on exit");
+            ACCOUNT.closeTrade(trade, currentCandle, "Closing on exit");
             closed++;
         }
 
         LOGGER.info("-- Closed {} open trades --\n", closed);
+        StratX.trace("-- Closed {} open trades --\n", closed);
     }
 
     private void printResults(Strategy strategy) {
         LOGGER.info("-- Results for strategy '{}' --", strategy.name);
         String info = String.format("[!] Final Balance: $%s USD %s (%s trade%s made)",
-        MathUtils.COMMAS_2F.format(account.getBalance()),
-                MathUtils.getPercent(account.getBalance() - STARTING_BALANCE, STARTING_BALANCE),
-                account.getTrades().size(),
-                account.getTrades().size() == 1 ? "" : "s");
+        MathUtils.COMMAS_2F.format(ACCOUNT.getBalance()),
+                MathUtils.getPercent(ACCOUNT.getBalance() - STARTING_BALANCE, STARTING_BALANCE),
+                ACCOUNT.getTrades().size(),
+                ACCOUNT.getTrades().size() == 1 ? "" : "s");
         LOGGER.info(info);
         StratX.trace(" ");
-        StratX.trace("-- End --\n" + info);
+        StratX.trace("-- End --");
+        StratX.trace(info);
 
-        if (account.getTrades().size() == 0) return;
-        Trade bestTradeProfit = account.getTrades().get(0);
-        Trade bestTradePercent = account.getTrades().get(0);
-        Trade worstTradeProfit = account.getTrades().get(0);
-        Trade worstTradePercent = account.getTrades().get(0);
+        if (ACCOUNT.getTrades().size() == 0) return;
+        Trade bestTradeProfit = ACCOUNT.getTrades().get(0);
+        Trade bestTradePercent = ACCOUNT.getTrades().get(0);
+        Trade worstTradeProfit = ACCOUNT.getTrades().get(0);
+        Trade worstTradePercent = ACCOUNT.getTrades().get(0);
         int winningTrades = 0;
         int losingTrades = 0;
 
-        for (Trade trade : account.getTrades()) {
+        for (Trade trade : ACCOUNT.getTrades()) {
             if (trade.getProfitPercent() > bestTradePercent.getProfitPercent()) bestTradePercent = trade;
             if (trade.getProfitPercent() < worstTradePercent.getProfitPercent()) worstTradePercent = trade;
             if (trade.getProfit() > bestTradeProfit.getProfit()) bestTradeProfit = trade;
@@ -172,8 +188,8 @@ public class BackTest {
             else losingTrades++;
         }
 
-        LOGGER.info("[!] Winning trades: {} ({})", MathUtils.COMMAS.format(winningTrades), MathUtils.getPercent(winningTrades, account.getTrades().size()));
-        LOGGER.info("[!] Losing trades: {} ({})\n", MathUtils.COMMAS.format(losingTrades), MathUtils.getPercent(losingTrades, account.getTrades().size()));
+        LOGGER.info("[!] Winning trades: {} ({})", MathUtils.COMMAS.format(winningTrades), MathUtils.getPercent(winningTrades, ACCOUNT.getTrades().size()));
+        LOGGER.info("[!] Losing trades: {} ({})\n", MathUtils.COMMAS.format(losingTrades), MathUtils.getPercent(losingTrades, ACCOUNT.getTrades().size()));
         LOGGER.info("-- Best trade --");
         LOGGER.info("By $: " + bestTradeProfit);
         LOGGER.info("By %: " + bestTradePercent);
@@ -188,12 +204,20 @@ public class BackTest {
         return LOGGER;
     }
 
-    public Account getAccount() {
-        return account;
+    public Configuration getConfig() {
+        return CONFIG;
+    }
+
+    public boolean shouldShowSignals() {
+        return SHOW_SIGNALS;
     }
 
     public boolean isShowGUI() {
         return SHOW_GUI && GUI != null;
+    }
+
+    public Account getAccount() {
+        return ACCOUNT;
     }
 
     public BacktestGUI getGUI() {
@@ -206,5 +230,10 @@ public class BackTest {
 
     public String getCoin() {
         return PRICE_DATA.substring(PRICE_DATA.lastIndexOf("/") + 1).split("_")[0];
+    }
+
+    public void addLock(XYSeries series) {
+        series.setNotify(false);
+        INDICATOR_LOCKS.add(series);
     }
 }

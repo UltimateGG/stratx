@@ -24,7 +24,7 @@ public class Trade {
         this.entryAmount = usd / entry.getClose();
         this.isOpen = true;
 
-        if (simulation.getGUI() != null)
+        if (simulation.getGUI() != null && simulation.shouldShowSignals())
             simulation.getGUI().getChartRenderer().addSignalIndicatorOn(entry.getID(), Signal.BUY);
         StratX.trace("[BUY] {} {} @ ${}/ea for ${}",
                 MathUtils.COMMAS_2F.format(this.entryAmount),
@@ -73,7 +73,7 @@ public class Trade {
         if (!isOpen) throw new IllegalStateException("Trade is already closed");
         this.exit = exit;
         this.isOpen = false;
-        if (simulation.getGUI() != null)
+        if (simulation.getGUI() != null && simulation.shouldShowSignals())
             simulation.getGUI().getChartRenderer().addSignalIndicatorOn(exit.getID(), Signal.SELL);
         this.closeReason = reason;
         simulation.getLogger().info(this.toString());
