@@ -20,13 +20,13 @@ public class BackTest {
     private final String PRICE_DATA = "src/main/resources/downloader/RVNUSDT_15m_3.26.2021.strx";
     private final double STARTING_BALANCE = CONFIG.getDouble("backtest.starting-balance", 100.0);
     private final boolean SHOW_SIGNALS = CONFIG.getBoolean("backtest.show-signals", true);
-    private final boolean SHOW_GUI = true;
+    private final boolean SHOW_GUI = false;
 
     private final Account ACCOUNT = new Account(STARTING_BALANCE);
     private List<Candlestick> data;
     private BacktestGUI GUI;
     private Candlestick currentCandle;
-    private final ArrayList<XYSeries> INDICATOR_LOCKS = new ArrayList<>();
+    private final ArrayList<XYSeries> INDICATOR_LOCKS = new ArrayList<>(); // @TODO Temp kinda trash solution?
 
     public static void main(String... args) {
         BackTest simulation = new BackTest();
@@ -111,7 +111,7 @@ public class BackTest {
             for (Trade trade : ACCOUNT.getTrades()) {
                 if (!trade.isOpen()) continue;
                 ACCOUNT.closeTrade(trade, candle, "Indicator Signal");
-                //break; // @TODO This closes one trade and then breaks, should it close all? Config opt?
+                if (strategy.SELL_ALL_ON_SIGNAL) break;
             }
         }
     }
@@ -159,7 +159,7 @@ public class BackTest {
     }
 
     private void printResults(Strategy strategy) {
-        LOGGER.info("-- Results for strategy '{}' --", strategy.name);
+        LOGGER.info("-- Results for strategy '{}' on {} --", strategy.name, getCoin());
         String info = String.format("[!] Final Balance: $%s USD %s (%s trade%s made)",
         MathUtils.COMMAS_2F.format(ACCOUNT.getBalance()),
                 MathUtils.getPercent(ACCOUNT.getBalance() - STARTING_BALANCE, STARTING_BALANCE),
@@ -171,6 +171,7 @@ public class BackTest {
         StratX.trace(info);
 
         if (ACCOUNT.getTrades().size() == 0) return;
+        long avgHoldingTime = 0;
         Trade bestTradeProfit = ACCOUNT.getTrades().get(0);
         Trade bestTradePercent = ACCOUNT.getTrades().get(0);
         Trade worstTradeProfit = ACCOUNT.getTrades().get(0);
@@ -179,6 +180,8 @@ public class BackTest {
         int losingTrades = 0;
 
         for (Trade trade : ACCOUNT.getTrades()) {
+            avgHoldingTime += trade.getHoldingTime();
+
             if (trade.getProfitPercent() > bestTradePercent.getProfitPercent()) bestTradePercent = trade;
             if (trade.getProfitPercent() < worstTradePercent.getProfitPercent()) worstTradePercent = trade;
             if (trade.getProfit() > bestTradeProfit.getProfit()) bestTradeProfit = trade;
@@ -188,6 +191,10 @@ public class BackTest {
             else losingTrades++;
         }
 
+        String holdingTime = String.format("[!] Avg holding time: %s",
+                Utils.msToNice(avgHoldingTime / ACCOUNT.getTrades().size(), false));
+        LOGGER.info(holdingTime);
+        StratX.trace(holdingTime);
         LOGGER.info("[!] Winning trades: {} ({})", MathUtils.COMMAS.format(winningTrades), MathUtils.getPercent(winningTrades, ACCOUNT.getTrades().size()));
         LOGGER.info("[!] Losing trades: {} ({})\n", MathUtils.COMMAS.format(losingTrades), MathUtils.getPercent(losingTrades, ACCOUNT.getTrades().size()));
         LOGGER.info("-- Best trade --");
@@ -196,8 +203,6 @@ public class BackTest {
         LOGGER.info("-- Worst trade --");
         LOGGER.info("By $: " + worstTradeProfit);
         LOGGER.info("By %: " + worstTradePercent);
-//        if (LOG_TRADES) log.write("[END]," + System.currentTimeMillis() + "," + new Date() + ", Total Trades: " + account.getTrades().size() + ", Bal: $" + account.getBalance()
-//            + "," + MathUtils.getPercent(account.getBalance() - STARTING_BALANCE, STARTING_BALANCE));
     }
 
     public Logger getLogger() {

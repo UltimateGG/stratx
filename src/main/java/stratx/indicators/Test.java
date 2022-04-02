@@ -1,14 +1,18 @@
 package stratx.indicators;
 
+import stratx.BackTest;
 import stratx.utils.Candlestick;
 import stratx.utils.Signal;
 
-public class Test implements IIndicator { // @TODO
+public class Test extends Indicator { // @TODO
     private Candlestick last;
     private boolean wasLastBullish = false;
     private boolean wasLastBearish = false;
     private Signal signal = Signal.HOLD;
 
+    public Test(BackTest simulation) {
+        super(simulation);
+    }
 
     @Override
     public void update(Candlestick candle) {

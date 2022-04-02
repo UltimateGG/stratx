@@ -9,7 +9,7 @@ import stratx.utils.Signal;
 
 import java.awt.*;
 
-public class EMA extends Indicator implements IIndicator {
+public class EMA extends Indicator {
     private final int period;
     private final PriceHistory priceHistory;
     private XYSeries emaLine;

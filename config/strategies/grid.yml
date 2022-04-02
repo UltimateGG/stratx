@@ -24,3 +24,4 @@ buy:
 sell:
     min-signals: -1
     based-on-indicators: true
+    sell-all: false

@@ -4,12 +4,19 @@ import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
+import com.github.lgooddatepicker.components.DatePicker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stratx.utils.MathUtils;
 import stratx.utils.Utils;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.io.*;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -24,24 +31,132 @@ public class Downloader {
     private final int BREAK_SECONDS = 5;
 
     private boolean downloading = false;
+    private JButton downloadButton;
+    private JTextArea console;
 
 
-    // @TODO Input from console or GUI
     public static void main(String... args) {
-        Downloader downloader = new Downloader();
+        new Downloader().createAndShowGUI();
+    }
 
-        String symbol = "RVNUSDT";
-        long daysHist = 365;
-        long startTime = System.currentTimeMillis() - (1000 * 60 * 60 * 24 * daysHist);
-        long endTime = System.currentTimeMillis();
-        CandlestickInterval interval = CandlestickInterval.FIFTEEN_MINUTES;
+    public void createAndShowGUI() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setPreferredSize(new Dimension(450, 400));
 
-        try {
-            downloader.download(symbol, startTime, endTime, interval);
-        } catch (Exception e) {
-            StratX.error("Caught exception during download: ", e);
-            System.exit(1);
+        JTextField symbolField = new JTextField("BTCUSDT");
+        setupComponent(symbolField, "Symbol", panel);
+
+        DatePicker startDatePicker = new DatePicker();
+        startDatePicker.getComponentToggleCalendarButton().setContentAreaFilled(false);
+        startDatePicker.setDateToToday();
+        startDatePicker.setDate(startDatePicker.getDate().minusDays(31));
+        setupComponent(startDatePicker, "Start Date", panel);
+
+        DatePicker endDatePicker = new DatePicker();
+        endDatePicker.setDateToToday();
+        endDatePicker.getComponentToggleCalendarButton().setContentAreaFilled(false);
+        setupComponent(endDatePicker, "End Date", panel);
+
+        JComboBox<CandlestickInterval> intervalBox = new JComboBox<>(CandlestickInterval.values());
+        intervalBox.setSelectedItem(CandlestickInterval.FIVE_MINUTES);
+        setupComponent(intervalBox, "Interval", panel);
+
+        downloadButton = new JButton("Download");
+        setupComponent(downloadButton, null, panel);
+
+        console = new JTextArea();
+        console.setEditable(false);
+        console.setLineWrap(true);
+        console.setWrapStyleWord(true);
+        console.setAutoscrolls(true);
+        console.setFont(new Font("Courier New", Font.PLAIN, 12));
+
+        JScrollPane scrollPane = new JScrollPane(console);
+        scrollPane.setPreferredSize(new Dimension(panel.getPreferredSize().width - 30, 150));
+        scrollPane.setSize(scrollPane.getPreferredSize());
+        scrollPane.setMaximumSize(scrollPane.getPreferredSize());
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setViewportView(console);
+        scrollPane.setAutoscrolls(true);
+
+        panel.add(Box.createRigidArea(new Dimension(0, 20)));
+        panel.add(scrollPane);
+
+        downloadButton.addActionListener(e -> {
+            console.setText("");
+            downloadButton.setEnabled(false);
+
+            String symbol = symbolField.getText();
+            long startTime = localDateToEpoch(startDatePicker.getDate());
+            long endTime = localDateToEpoch(endDatePicker.getDate());
+            CandlestickInterval interval = (CandlestickInterval) intervalBox.getSelectedItem();
+
+            new Thread(() -> {
+                try {
+                    download(symbol, startTime, endTime, interval);
+                } catch (Exception ex) {
+                    log("ERROR: Caught exception during download: %s", ex);
+                    LOGGER.error("ERROR: Caught exception during download: ", ex);
+                    downloading = false;
+                    downloadButton.setEnabled(true);
+                }
+            }).start();
+        });
+
+        JFrame frame = new JFrame("StratX Downloader");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setResizable(false);
+        frame.setContentPane(panel);
+        frame.pack();
+        frame.setVisible(true);
+
+        log("Downloader initialized");
+    }
+
+    private void setupComponent(JComponent component, String label, JPanel panel) {
+        component.setFont(new Font("Arial", Font.PLAIN, 12));
+        component.setForeground(Color.BLACK);
+        component.setAlignmentX(Component.CENTER_ALIGNMENT);
+        component.setPreferredSize(new Dimension(panel.getPreferredSize().width - 30, 35));
+        component.setMaximumSize(component.getPreferredSize());
+        component.setSize(component.getPreferredSize());
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        if (component instanceof JTextField) {
+            JTextField textField = (JTextField) component;
+            textField.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.BLACK));
+
+            textField.addFocusListener(new FocusListener() {
+                @Override
+                public void focusGained(FocusEvent e) {
+                    textField.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(0x109CEC)));
+                }
+
+                @Override
+                public void focusLost(FocusEvent e) {
+                    textField.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.BLACK));
+                }
+            });
+        } else if (component instanceof JButton) {
+            JButton button = (JButton) component;
+            button.setContentAreaFilled(false);
+            panel.add(Box.createRigidArea(new Dimension(0, 10)));
         }
+
+        if (label != null) {
+            JLabel labelComponent = new JLabel(label);
+            labelComponent.setFont(new Font("Arial", Font.PLAIN, 12));
+            labelComponent.setForeground(Color.BLACK);
+            labelComponent.setAlignmentX(Component.CENTER_ALIGNMENT);
+            labelComponent.setPreferredSize(new Dimension(panel.getPreferredSize().width - 30, 30));
+            labelComponent.setMaximumSize(labelComponent.getPreferredSize());
+            labelComponent.setSize(labelComponent.getPreferredSize());
+            panel.add(labelComponent);
+        }
+
+        panel.add(component);
     }
 
     private String createFile(String symbol, CandlestickInterval interval, long startTime) throws IOException {
@@ -49,7 +164,7 @@ public class Downloader {
 
         if (!dataFolder.exists()) {
             if (!dataFolder.mkdirs()) {
-                LOGGER.error("Failed to create data folder: " + dataFolder.getAbsolutePath());
+                log("ERROR: Failed to create data folder: " + dataFolder.getAbsolutePath());
                 throw new IOException("Failed to create data folder: " + dataFolder.getAbsolutePath());
             }
         }
@@ -60,7 +175,7 @@ public class Downloader {
         File dataFile = new File(fileName);
 
         if (dataFolder.exists() && dataFolder.isDirectory() && !dataFile.exists() && dataFile.createNewFile()) {
-            LOGGER.info("Created data file: " + dataFile.getAbsolutePath());
+            log("Created data file: " + dataFile.getAbsolutePath());
             return dataFile.getAbsolutePath();
         }
 
@@ -76,11 +191,11 @@ public class Downloader {
         int numRequests = MathUtils.clampInt(totalCandles / MAX_CANDLES_PER_REQUEST, 1, Integer.MAX_VALUE);
 
         if (!isValidSymbol(symbol)) {
-            LOGGER.error("Invalid symbol: " + symbol);
+            log("ERROR: Invalid symbol: " + symbol);
             System.exit(1);
         }
 
-        LOGGER.info("Downloading {} on {} interval ({} candlesticks/{} requests)..", symbol, interval.getIntervalId(), MathUtils.COMMAS.format(totalCandles), numRequests);
+        log("Downloading %s on %s interval (%s candlesticks/%s requests)..", symbol, interval.getIntervalId(), MathUtils.COMMAS.format(totalCandles), numRequests);
 
         try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(fileName)))) {
             long currentStartTime = startTime;
@@ -102,7 +217,7 @@ public class Downloader {
                 // Date Open High Low Close Volume
                 for (Candlestick candle : downloaded) {
                     if (times.contains(candle.getCloseTime())) {
-                        LOGGER.warn("Duplicate candle time: " + candle.getCloseTime());
+                        log("WARN: Duplicate candle time: " + candle.getCloseTime());
                         continue;
                     }
 
@@ -119,12 +234,12 @@ public class Downloader {
                 output.flush();
                 currentStartTime += Utils.binanceIntervalToMs(interval) * MAX_CANDLES_PER_REQUEST;
                 if (i % 5 == 0 && i > 0) {
-                    LOGGER.info("Sent {}/{} requests, {} candles", i, numRequests, MathUtils.COMMAS.format((long) i * MAX_CANDLES_PER_REQUEST));
+                    log("Sent %d/%d requests, %s candles", i, numRequests, MathUtils.COMMAS.format((long) i * MAX_CANDLES_PER_REQUEST));
                     System.gc();
                 }
 
                 if (i % 15 == 0 && i > 0) {
-                    LOGGER.info("Sleeping for {} seconds", BREAK_SECONDS);
+                    log("Sleeping for %d seconds", BREAK_SECONDS);
                     try {
                         Thread.sleep(BREAK_SECONDS * 60 * 1000L);
                     } catch (Exception ignored) {}
@@ -135,7 +250,16 @@ public class Downloader {
         }
 
         downloading = false;
-        LOGGER.info("Download complete!");
+        downloadButton.setEnabled(true);
+        log("Download complete!");
+    }
+
+    private void log(String msg, Object... args) {
+        LOGGER.info(String.format(msg, args));
+        if (console != null) {
+            console.append(String.format(msg, args) + "\n");
+            console.setCaretPosition(console.getDocument().getLength());
+        }
     }
 
     private boolean isValidSymbol(String symbol) {
@@ -149,6 +273,10 @@ public class Downloader {
         Calendar cal = Calendar.getInstance();
         cal.setTime(d);
         return String.format("%s.%s.%s", cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH), cal.get(Calendar.YEAR));
+    }
+
+    private long localDateToEpoch(LocalDate d) {
+        return d.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
     public boolean isDownloading() {

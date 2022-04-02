@@ -1,7 +1,7 @@
 package stratx.strategies;
 
 import stratx.BackTest;
-import stratx.indicators.IIndicator;
+import stratx.indicators.Indicator;
 import stratx.utils.Candlestick;
 import stratx.utils.Configuration;
 import stratx.utils.MathUtils;
@@ -10,7 +10,7 @@ import stratx.utils.Signal;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class Strategy implements IIndicator {
+public class Strategy {
     /** The name of the strategy */
     public final String name;
 
@@ -76,16 +76,19 @@ public class Strategy implements IIndicator {
      * sell than buy */
     public boolean DONT_BUY_IF_SELL_GREATER = true;
 
+    /** Whether to sell all trades on one sell signal, or only close one per signal */
+    public boolean SELL_ALL_ON_SIGNAL = false;
+
     private final BackTest simulation;
-    private final ArrayList<IIndicator> indicators = new ArrayList<>();
+    private final ArrayList<Indicator> indicators = new ArrayList<>();
     private String configName;
 
 
-    public Strategy(String name, BackTest simulation, IIndicator... indicators) {
+    public Strategy(String name, BackTest simulation, Indicator... indicators) {
         this(name, simulation, name.toLowerCase().replaceAll(" ", "_") + ".yml", indicators);
     }
 
-    public Strategy(String name, BackTest simulation, String configFile, IIndicator... indicators) {
+    public Strategy(String name, BackTest simulation, String configFile, Indicator... indicators) {
         this.name = name;
         this.simulation = simulation;
         this.indicators.addAll(Arrays.asList(indicators));
@@ -103,20 +106,18 @@ public class Strategy implements IIndicator {
     }
 
     /** Called every time a candle is closed or every "tick" */
-    @Override
     public void update(Candlestick candle) {
-        for (IIndicator indicator : indicators)
+        for (Indicator indicator : indicators)
             indicator.update(candle);
     }
 
     /** Default implementation, uses the indicators to determine the signal
      * You may override this for custom strategies */
-    @Override
     public Signal getSignal() {
         int buySignals = 0;
         int sellSignals = 0;
 
-        for (IIndicator indicator : indicators) {
+        for (Indicator indicator : indicators) {
             Signal signal = indicator.getSignal();
             if (signal == Signal.BUY) buySignals++;
             if (signal == Signal.SELL) sellSignals++;
@@ -167,19 +168,20 @@ public class Strategy implements IIndicator {
         MAX_USD_PER_TRADE = config.getDouble("buy.max-usd", MAX_USD_PER_TRADE);
         MIN_SELL_SIGNALS = config.getInt("sell.min-signals", MIN_SELL_SIGNALS);
         SELL_BASED_ON_INDICATORS = config.getBoolean("sell.based-on-indicators", SELL_BASED_ON_INDICATORS);
+        SELL_ALL_ON_SIGNAL = config.getBoolean("sell.sell-all", SELL_ALL_ON_SIGNAL);
 
         simulation.getLogger().info("Successfully loaded strategy settings");
     }
 
-    public void addIndicator(IIndicator indicator) {
+    public void addIndicator(Indicator indicator) {
         indicators.add(indicator);
     }
 
-    public void removeIndicator(IIndicator indicator) {
+    public void removeIndicator(Indicator indicator) {
         indicators.remove(indicator);
     }
 
-    public ArrayList<IIndicator> getIndicators() {
+    public ArrayList<Indicator> getIndicators() {
         return indicators;
     }
 
@@ -205,6 +207,7 @@ public class Strategy implements IIndicator {
         sb.append("MIN_USD_PER_TRADE: ").append(MIN_USD_PER_TRADE).append("\n");
         sb.append("BUY_AMOUNT_PERCENT: ").append(BUY_AMOUNT_PERCENT).append("\n");
         sb.append("DONT_BUY_IF_SELL_GREATER: ").append(DONT_BUY_IF_SELL_GREATER).append("\n");
+        sb.append("SELL_ALL_ON_SIGNAL: ").append(SELL_ALL_ON_SIGNAL).append("\n");
         
         return sb.toString();
     }

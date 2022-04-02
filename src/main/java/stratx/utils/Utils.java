@@ -53,4 +53,30 @@ public class Utils {
         }
         return sb.toString();
     }
+
+    public static String msToNice(long ms) {
+        return msToNice(ms, true, true, true);
+    }
+
+    public static String msToNice(long ms, boolean showSeconds) {
+        return msToNice(ms, true, true, showSeconds);
+    }
+
+    public static String msToNice(long ms, boolean showHours, boolean showMinutes, boolean showSeconds) {
+        long seconds = ms / 1000;
+        long minutes = seconds / 60;
+        long hours = minutes / 60;
+        long days = hours / 24;
+        long years = days / 365;
+
+        String result = "";
+
+        if (years > 0) result += years + "y ";
+        if (days > 0)  result += (days % 365) + "d ";
+        if (hours > 0 && showHours) result += (hours % 24) + "h ";
+        if (minutes > 0 && showMinutes) result += (minutes % 60) + "m ";
+        if (seconds > 0 && showSeconds) result += (seconds % 60) + "s ";
+
+        return result;
+    }
 }

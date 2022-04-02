@@ -9,7 +9,7 @@ import stratx.utils.Signal;
 
 import java.awt.*;
 
-public class WMA extends Indicator implements IIndicator {
+public class WMA extends Indicator {
     private final int period;
     private final PriceHistory priceHistory;
     private XYSeries wmaLine;

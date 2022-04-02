@@ -14,7 +14,7 @@ import java.awt.*;
 import static stratx.gui.ChartRenderer.styleAxis;
 import static stratx.gui.ChartRenderer.stylePlot;
 
-public class RSI extends Indicator implements IIndicator {
+public class RSI extends Indicator {
     private final int period;
     private final double overbought;
     private final double oversold;

@@ -9,17 +9,20 @@ public class Trade {
     private final BackTest simulation;
     private boolean isOpen;
     private final Candlestick entry;
+    private final long entryTime;
     private final double entryAmount;
     private final double entryAmountUSD;
     private boolean trailingStopArmed = false;
     private double lastProfitPercent = 0;
     private Candlestick exit;
+    private long exitTime;
     private String closeReason;
 
     public Trade(BackTest simulation, Candlestick entry, double usd) {
         if (usd <= 0.0) throw new IllegalArgumentException("USD must be positive to enter a trade");
         this.simulation = simulation;
         this.entry = entry;
+        this.entryTime = entry.getDate();
         this.entryAmountUSD = usd;
         this.entryAmount = usd / entry.getClose();
         this.isOpen = true;
@@ -73,9 +76,12 @@ public class Trade {
         if (!isOpen) throw new IllegalStateException("Trade is already closed");
         this.exit = exit;
         this.isOpen = false;
+        this.exitTime = exit.getDate();
+        this.closeReason = reason;
+
         if (simulation.getGUI() != null && simulation.shouldShowSignals())
             simulation.getGUI().getChartRenderer().addSignalIndicatorOn(exit.getID(), Signal.SELL);
-        this.closeReason = reason;
+
         simulation.getLogger().info(this.toString());
         StratX.trace("[SELL] ({}) {} {} @ ${}/ea for profit of ${} ({}%)",
                 reason,
@@ -97,6 +103,10 @@ public class Trade {
     /** Returns the current profit % */
     public double getProfitPercent() {
         return (getProfit() / entryAmountUSD) * 100.0D;
+    }
+
+    public long getHoldingTime() {
+        return isOpen ? System.currentTimeMillis() - entryTime : exitTime - entryTime;
     }
 
     @Override
