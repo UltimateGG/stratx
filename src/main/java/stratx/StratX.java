@@ -33,7 +33,7 @@ public class StratX {
         Scanner scanner = new Scanner(System.in);
         LOGGER.info("Please select a mode: "  + Arrays.toString(Mode.values()));
 
-        MODE = Mode.valueOf(scanner.next().toUpperCase().trim());
+        MODE = Mode.valueOf(scanner.next().toUpperCase().trim()); // test
         LOGGER.info("Starting StratX in {} mode...", MODE);
 
         // Log in to Binance
