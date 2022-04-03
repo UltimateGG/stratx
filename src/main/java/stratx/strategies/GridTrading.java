@@ -5,7 +5,7 @@ import stratx.utils.Candlestick;
 import stratx.utils.Signal;
 
 public class GridTrading extends Strategy {
-    private final double gridSize; // note: 40 is best on eth
+    private final double gridSize;
     private double baseLine = 0;
     private Signal currentSignal = Signal.HOLD;
 

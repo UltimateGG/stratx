@@ -18,7 +18,7 @@ buy:
     min-signals: -1
     percent-of-bal: 25.0
     dont-buy-if-more-sell-signals: true
-    min-usd: 1.0
+    min-usd: 10.0
     max-usd: -1.0
     
 sell:

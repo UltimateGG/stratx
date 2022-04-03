@@ -35,10 +35,6 @@ public class Downloader {
     private JTextArea console;
 
 
-    public static void main(String... args) {
-        new Downloader().createAndShowGUI();
-    }
-
     public void createAndShowGUI() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -241,7 +237,7 @@ public class Downloader {
                 if (i % 15 == 0 && i > 0) {
                     log("Sleeping for %d seconds", BREAK_SECONDS);
                     try {
-                        Thread.sleep(BREAK_SECONDS * 60 * 1000L);
+                        Thread.sleep(BREAK_SECONDS * 1000L);
                     } catch (Exception ignored) {}
                 }
             }

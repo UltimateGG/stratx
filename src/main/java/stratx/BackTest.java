@@ -2,9 +2,13 @@ package stratx;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartFrame;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import stratx.gui.BacktestGUI;
-import stratx.strategies.GridTrading;
 import stratx.strategies.Strategy;
 import stratx.utils.*;
 
@@ -14,13 +18,12 @@ import java.util.List;
 
 @SuppressWarnings("FieldCanBeLocal")
 public class BackTest {
-    static { org.fusesource.jansi.AnsiConsole.systemInstall(); } // @TODO Move to main entry point
     private final Logger LOGGER = LogManager.getLogger("BackTest");
     private final Configuration CONFIG = new Configuration("config/config.yml");
-    private final String PRICE_DATA = "src/main/resources/downloader/RVNUSDT_15m_3.26.2021.strx";
+    private final String PRICE_DATA;
     private final double STARTING_BALANCE = CONFIG.getDouble("backtest.starting-balance", 100.0);
     private final boolean SHOW_SIGNALS = CONFIG.getBoolean("backtest.show-signals", true);
-    private final boolean SHOW_GUI = false;
+    private final boolean SHOW_GUI;
 
     private final Account ACCOUNT = new Account(STARTING_BALANCE);
     private List<Candlestick> data;
@@ -28,14 +31,17 @@ public class BackTest {
     private Candlestick currentCandle;
     private final ArrayList<XYSeries> INDICATOR_LOCKS = new ArrayList<>(); // @TODO Temp kinda trash solution?
 
-    public static void main(String... args) {
-        BackTest simulation = new BackTest();
-        simulation.loadData(simulation.PRICE_DATA); // Load the price data in
 
-        Strategy gridStrat = new GridTrading(simulation, 0.007142857);
+    public BackTest(String priceData, boolean showGui) {
+        this.PRICE_DATA = priceData;
+        this.SHOW_GUI = showGui;
 
+        this.loadData(this.PRICE_DATA); // Load the price data in
+    }
+
+    public void begin(Strategy strategy) {
         try {
-            simulation.runTest(gridStrat);
+            this.runTest(strategy);
         } catch (Exception e) {
             StratX.error("Caught exception during backtest: ", e);
             System.exit(1);
@@ -59,13 +65,15 @@ public class BackTest {
         if (SHOW_GUI) GUI = new BacktestGUI(PRICE_DATA, this, 1800, 900);
         ACCOUNT.reset();
 
-        StratX.trace(PRICE_DATA.substring(PRICE_DATA.lastIndexOf('/') + 1));
+        StratX.trace(PRICE_DATA.substring(PRICE_DATA.lastIndexOf('\\') + 1));
         StratX.trace("Starting backtest at {} ({}) on {} candles...", new Date(), System.currentTimeMillis(), data.size());
         StratX.trace("Starting balance: ${}", MathUtils.COMMAS.format(STARTING_BALANCE));
         StratX.trace(strategy.toString());
 
         LOGGER.info("Running test with a starting balance of ${}\n\n", MathUtils.COMMAS.format(STARTING_BALANCE));
         LOGGER.info("-- Begin --");
+
+        ArrayList<Double> balances = new ArrayList<>();
 
         int index = 0;
         for (Candlestick candle : data) {
@@ -74,11 +82,15 @@ public class BackTest {
 
             if (SHOW_GUI) GUI.getChartRenderer().addCandle(candle, isLast);
 
+            int pre = ACCOUNT.getOpenTrades();
+            this.checkTakeProfitStopLoss(strategy);
             this.checkBuySellSignals(candle, strategy);
-            this.checkTakeProfitStopLoss(candle, strategy);
 
             if (index % 1000 == 0 && index > 0)
                 LOGGER.info("-- Backtest: {}% --", Math.round((double)index / data.size() * 100.0D));
+
+            if (ACCOUNT.getOpenTrades() < pre)
+            balances.add(ACCOUNT.getBalance());
 
             index++;
         }
@@ -88,6 +100,7 @@ public class BackTest {
             plot.fireSeriesChanged();
         }
 
+        temp(balances);
         LOGGER.info("-- End --");
 
         if (strategy.CLOSE_OPEN_TRADES_ON_EXIT)
@@ -98,6 +111,20 @@ public class BackTest {
         return ((ACCOUNT.getBalance() - STARTING_BALANCE) / STARTING_BALANCE) * 100.0D;
     }
 
+    private void temp(ArrayList<Double> balances) {
+        // show line chart
+        XYSeriesCollection dataset = new XYSeriesCollection();
+        XYSeries series = new XYSeries("Balance");
+        for (int i = 0; i < balances.size(); i++) {
+            series.add(i, balances.get(i));
+        }
+        dataset.addSeries(series);
+        JFreeChart chart = ChartFactory.createXYLineChart("Balance", "Candle", "Balance", dataset, PlotOrientation.VERTICAL, true, true, false);
+        ChartFrame frame = new ChartFrame("Balance", chart);
+        frame.setVisible(true);
+        frame.setSize(1800, 600);
+    }
+
     // Places buy/sell orders (Signals on chart as of now)
     private void checkBuySellSignals(Candlestick candle, Strategy strategy) {
         strategy.update(candle);
@@ -105,19 +132,19 @@ public class BackTest {
 
         if (signal == Signal.BUY) {
             double amt = strategy.getBuyAmount();
-            if (amt > 0 && amt >= strategy.MIN_USD_PER_TRADE)
-                ACCOUNT.openTrade(new Trade(this, candle, amt));
+            if (amt > 0 && ACCOUNT.getBalance() >= amt && strategy.isValidBuy(amt))
+                ACCOUNT.openTrade(new Trade(this, amt));
         } else if (signal == Signal.SELL) {
             for (Trade trade : ACCOUNT.getTrades()) {
-                if (!trade.isOpen()) continue;
-                ACCOUNT.closeTrade(trade, candle, "Indicator Signal");
+                if (!trade.isOpen() || !strategy.isValidSell()) continue;
+                ACCOUNT.closeTrade(trade, "Indicator Signal");
                 if (strategy.SELL_ALL_ON_SIGNAL) break;
             }
         }
     }
 
     // Take profit, stop loss, & trailing stop loss check
-    private void checkTakeProfitStopLoss(Candlestick candle, Strategy strategy) {
+    private void checkTakeProfitStopLoss(Strategy strategy) {
         if (ACCOUNT.getOpenTrades() == 0) return;
         for (Trade trade : ACCOUNT.getTrades()) {
             if (!trade.isOpen()) continue;
@@ -126,14 +153,14 @@ public class BackTest {
             boolean stopLoss = strategy.USE_STOP_LOSS && profitPercent <= -strategy.STOP_LOSS;
 
             if (takeProfit || stopLoss) {
-                ACCOUNT.closeTrade(trade, candle, takeProfit ? "Take Profit" : "Stop Loss");
+                ACCOUNT.closeTrade(trade, takeProfit ? "Take Profit" : "Stop Loss");
             } else if (strategy.USE_TRAILING_STOP) {
                 if (profitPercent >= strategy.ARM_TRAILING_STOP_AT) trade.setTrailingStopArmed(true);
                 if (trade.isTrailingStopArmed()) {
                     double profitDiff = profitPercent - trade.getLastProfitPercent();
 
                     if (profitDiff <= -strategy.TRAILING_STOP && profitPercent > 0.0)
-                        ACCOUNT.closeTrade(trade, candle, "Trailing Stop");
+                        ACCOUNT.closeTrade(trade, "Trailing Stop");
                     trade.setLastProfitPercent(profitPercent);
                 }
             }
@@ -150,7 +177,7 @@ public class BackTest {
 
         for (Trade trade : ACCOUNT.getTrades()) {
             if (!trade.isOpen()) continue;
-            ACCOUNT.closeTrade(trade, currentCandle, "Closing on exit");
+            ACCOUNT.closeTrade(trade, "Closing on exit");
             closed++;
         }
 
@@ -214,7 +241,7 @@ public class BackTest {
     }
 
     public boolean shouldShowSignals() {
-        return SHOW_SIGNALS;
+        return SHOW_SIGNALS && SHOW_GUI && GUI != null;
     }
 
     public boolean isShowGUI() {
@@ -234,11 +261,15 @@ public class BackTest {
     }
 
     public String getCoin() {
-        return PRICE_DATA.substring(PRICE_DATA.lastIndexOf("/") + 1).split("_")[0];
+        return PRICE_DATA.substring(PRICE_DATA.lastIndexOf('\\') + 1).split("_")[0];
     }
 
     public void addLock(XYSeries series) {
         series.setNotify(false);
         INDICATOR_LOCKS.add(series);
+    }
+
+    public double getCurrentPrice() {
+        return currentCandle.getClose();
     }
 }

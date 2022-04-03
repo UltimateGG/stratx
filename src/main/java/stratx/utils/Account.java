@@ -24,15 +24,15 @@ public class Account {
     }
 
     public void openTrade(Trade trade) {
-        balance -= trade.getEntryAmountUSD();
         trades.add(trade);
+        balance -= trade.getEntryAmountUSD();
         openTrades++;
         StratX.trace("New Balance: ${} ({} open trades)\n", MathUtils.COMMAS_2F.format(balance), openTrades);
     }
 
-    public void closeTrade(Trade trade, Candlestick exit, String reason) {
-        balance += trade.getProfit() + trade.getEntryAmountUSD();
-        trade.close(exit, reason);
+    public void closeTrade(Trade trade, String reason) {
+        trade.close(reason);
+        balance += trade.getCurrentUSDWorth();
         openTrades--;
         StratX.trace("New Balance: ${} ({} open trades)\n", MathUtils.COMMAS_2F.format(balance), openTrades);
     }

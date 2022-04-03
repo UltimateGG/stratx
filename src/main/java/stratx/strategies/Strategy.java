@@ -2,10 +2,7 @@ package stratx.strategies;
 
 import stratx.BackTest;
 import stratx.indicators.Indicator;
-import stratx.utils.Candlestick;
-import stratx.utils.Configuration;
-import stratx.utils.MathUtils;
-import stratx.utils.Signal;
+import stratx.utils.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -114,28 +111,53 @@ public class Strategy {
     /** Default implementation, uses the indicators to determine the signal
      * You may override this for custom strategies */
     public Signal getSignal() {
+        BuySellSignals buySellSignals = getBuySellSignals();
+        int buySignals = buySellSignals.buySignals;
+        int sellSignals = buySellSignals.sellSignals;
+
+        if (buySignals == 0 && sellSignals == 0) return Signal.HOLD;
+        if (buySignals > sellSignals && !DONT_BUY_IF_SELL_GREATER) return Signal.BUY;
+        else if (sellSignals > buySignals) return Signal.SELL;
+        else return Signal.HOLD;
+    }
+
+    /** Called to determine if a buy position can be opened. Should generally be kept
+     * the same. This verifies that there is not more than the max open trades,
+     * buy signals > than sell signal count, etc. */
+    public boolean isValidBuy(double amtUSD) {
+        BuySellSignals buySellSignals = getBuySellSignals();
+        int buySignals = buySellSignals.buySignals;
+        int sellSignals = buySellSignals.sellSignals;
+
+        return (((MIN_BUY_SIGNALS == -1 && buySignals >= indicators.size()) || (buySignals >= MIN_BUY_SIGNALS && MIN_BUY_SIGNALS != -1))
+                && (buySignals >= sellSignals && DONT_BUY_IF_SELL_GREATER)
+                && (simulation.getAccount().getOpenTrades() < MAX_OPEN_TRADES)
+                && (simulation.getAccount().getBalance() > 0)
+                && amtUSD >= MIN_USD_PER_TRADE
+        );
+    }
+
+    /** Called to determine if a sell position can be opened. Should generally be kept
+     * the same. */
+    public boolean isValidSell() {
+        int sellSignals = getBuySellSignals().sellSignals;
+        return (((MIN_SELL_SIGNALS == -1 && sellSignals >= indicators.size()) || (sellSignals >= MIN_SELL_SIGNALS && MIN_SELL_SIGNALS != -1))
+                && (SELL_BASED_ON_INDICATORS)
+                && (simulation.getAccount().getOpenTrades() > 0)
+        );
+    }
+
+    private BuySellSignals getBuySellSignals() {
         int buySignals = 0;
         int sellSignals = 0;
 
         for (Indicator indicator : indicators) {
             Signal signal = indicator.getSignal();
             if (signal == Signal.BUY) buySignals++;
-            if (signal == Signal.SELL) sellSignals++;
+            else if (signal == Signal.SELL) sellSignals++;
         }
 
-        if (buySignals == 0 && sellSignals == 0) return Signal.HOLD;
-
-        if (((MIN_BUY_SIGNALS == -1 && buySignals >= indicators.size()) || (buySignals >= MIN_BUY_SIGNALS && MIN_BUY_SIGNALS != -1))
-                && (buySignals >= sellSignals && DONT_BUY_IF_SELL_GREATER)
-                && (simulation.getAccount().getOpenTrades() < MAX_OPEN_TRADES)
-                && (simulation.getAccount().getBalance() > 0)
-        ) return Signal.BUY;
-        else if (((MIN_SELL_SIGNALS == -1 && sellSignals >= indicators.size()) || (sellSignals >= MIN_SELL_SIGNALS && MIN_SELL_SIGNALS != -1))
-                && (SELL_BASED_ON_INDICATORS)
-                && (simulation.getAccount().getOpenTrades() > 0)
-        ) return Signal.SELL;
-
-        return Signal.HOLD;
+        return new BuySellSignals(buySignals, sellSignals);
     }
 
     /** Called when a trade is opened to determine how much USD

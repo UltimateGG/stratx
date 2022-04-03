@@ -29,7 +29,7 @@ public class BacktestGUI {
             frame.setIconImage(icon.getImage());
         } catch (Exception ignored) {}
 
-        chartRenderer = new ChartRenderer(chartTitle.substring(chartTitle.lastIndexOf("/") + 1), simulation, width, height);
+        chartRenderer = new ChartRenderer(chartTitle.substring(chartTitle.lastIndexOf('\\') + 1), simulation, width, height);
         chartRenderer.setBackground(ChartRenderer.darkThemeColor);
     }
 
