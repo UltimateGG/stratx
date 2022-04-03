@@ -27,7 +27,7 @@ public class Downloader {
     private final Logger LOGGER = LogManager.getLogger("Downloader");
     private final BinanceApiRestClient CLIENT = BinanceApiClientFactory.newInstance().newRestClient(); // No credentials needed
     private final int MAX_CANDLES_PER_REQUEST = 1000; // Binance limitation
-    private final String DATA_FOLDER = "src/main/resources/downloader/";
+    private final String DATA_FOLDER = StratX.DATA_FOLDER + "downloader\\";
     private final int BREAK_SECONDS = 5;
 
     private boolean downloading = false;

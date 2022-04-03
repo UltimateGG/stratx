@@ -5,4 +5,3 @@ logs/
 *.log
 *.log.gz
 dev-login.yml
-src/main/resources/config/dev-login.yml
