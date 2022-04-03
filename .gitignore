@@ -4,3 +4,4 @@ downloader/
 logs/
 *.log
 *.log.gz
+dev-login.yml

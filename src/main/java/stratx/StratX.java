@@ -4,65 +4,76 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stratx.strategies.GridTrading;
 import stratx.strategies.Strategy;
+import stratx.utils.Mode;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class StratX {
-    private static final org.apache.logging.log4j.Logger LOGGER = LogManager.getLogger("StratX");
     public static final boolean DEVELOPMENT_MODE = "dev".equals(System.getProperty("env"));
-    public static final String DATA_FOLDER = System.getProperty("user.dir")
-            + (DEVELOPMENT_MODE ? "\\src\\main\\resources\\" : "\\stratx\\");
-
     static {
         if (!DEVELOPMENT_MODE) System.setProperty("env", "prod");
         org.fusesource.jansi.AnsiConsole.systemInstall();
     }
 
+    private static final org.apache.logging.log4j.Logger LOGGER = LogManager.getLogger("StratX");
+    public static final String DATA_FOLDER = System.getProperty("user.dir")
+            + (DEVELOPMENT_MODE ? "\\src\\main\\resources\\" : "\\stratx\\");
+    public static Mode MODE = Mode.SIMULATION;
+
     // @TODO Temp entry point
     public static void main(String... args) {
-        if (args.length == 0) {
-            LOGGER.error("Usage: java -jar stratx.jar <mode>");
-            return;
+        Scanner scanner = new Scanner(System.in);
+        LOGGER.info("Please select a mode: "  + Arrays.toString(Mode.values()));
+
+        MODE = Mode.valueOf(scanner.next().toUpperCase().trim());
+        LOGGER.info("Starting StratX in {} mode...", MODE);
+
+        if (MODE == Mode.DOWNLOAD) {
+            new Downloader().createAndShowGUI();
+        } else if (MODE == Mode.BACKTEST) backtestMode();
+        else if (MODE == Mode.SIMULATION) {
+
+        } else if (MODE == Mode.LIVE) {
+
+        } else {
+            LOGGER.error("Invalid mode {}", MODE);
         }
-
-        final String mode = args[0].toLowerCase().trim();
-
-        if ("download".equals(mode)) downloaderMode();
-        else if ("backtest".equals(mode)) backtestMode();
-    }
-
-    private static void downloaderMode() {
-        LOGGER.info("Running downloader...");
-        new Downloader().createAndShowGUI();
     }
 
     private static void backtestMode() {
+        File backtestData = getFileFromUser();
+        BackTest backtest = new BackTest(backtestData.getAbsolutePath(), true);
+
+        Strategy gridStrat = new GridTrading(backtest, 0.01);
+        backtest.begin(gridStrat);
+    }
+
+    private static File getFileFromUser() {
         File[] files = new File(DATA_FOLDER + "\\downloader\\").listFiles();
-        if (files == null) {
+
+        if (files == null || files.length == 0) {
             LOGGER.error("No files found in {}, download them using the downloader mode!", DATA_FOLDER + "\\downloader\\");
-            return;
+            System.exit(1);
         }
 
-        LOGGER.info("Found {} files. Please select a file to test on.", files.length);
+        LOGGER.info("Found {} files. Please select a file to test on:", files.length);
         for (int i = 1; i < files.length; i++) LOGGER.info("[{}] {}", i, files[i].getName());
 
-        LOGGER.info("Number: ");
+        LOGGER.info("Number: "); // @TODO config for max open trade time?, market data stream
         Scanner scanner = new Scanner(System.in);
         int fileIndex = scanner.nextInt();
 
         if (fileIndex < 1 || fileIndex > files.length || !files[fileIndex].getName().endsWith(".strx")) {
             LOGGER.error("Invalid file index {}", fileIndex);
-            return;
+            System.exit(1);
         }
 
         File file = files[fileIndex];
         LOGGER.info("Selected {}", file.getName());
 
-        BackTest backtest = new BackTest(file.getAbsolutePath(), true);
-
-        Strategy gridStrat = new GridTrading(backtest, 0.01);
-        backtest.begin(gridStrat);
+        return file;
     }
 
     public static Logger getLogger() {

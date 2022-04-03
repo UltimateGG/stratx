@@ -1,6 +1,5 @@
 package stratx;
 
-import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
@@ -9,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stratx.utils.MathUtils;
 import stratx.utils.Utils;
+import stratx.utils.binance.BinanceClient;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,7 +25,7 @@ import java.util.List;
 @SuppressWarnings("FieldCanBeLocal")
 public class Downloader {
     private final Logger LOGGER = LogManager.getLogger("Downloader");
-    private final BinanceApiRestClient CLIENT = BinanceApiClientFactory.newInstance().newRestClient();
+    private final BinanceApiRestClient CLIENT = BinanceClient.login(); // No credentials needed
     private final int MAX_CANDLES_PER_REQUEST = 1000; // Binance limitation
     private final String DATA_FOLDER = "src/main/resources/downloader/";
     private final int BREAK_SECONDS = 5;

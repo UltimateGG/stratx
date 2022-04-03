@@ -23,7 +23,7 @@ public class Utils {
                 return 1000 * 60 * 60L;
             case TWO_HOURLY:
                 return 1000 * 60 * 60 * 2L;
-            case FOUR_HORLY:
+            case FOUR_HOURLY:
                 return 1000 * 60 * 60 * 4L;
             case SIX_HOURLY:
                 return 1000 * 60 * 60 * 6L;

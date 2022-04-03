@@ -1,9 +1,9 @@
 package stratx.gui;
 
 import stratx.BackTest;
+import stratx.StratX;
 
 import javax.swing.*;
-import java.io.File;
 import java.net.URL;
 
 public class BacktestGUI {
@@ -22,9 +22,9 @@ public class BacktestGUI {
         frame = new JFrame("StratX Backtest");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // Set icon
-        try {
-            URL iconURL = new File("src/main/resources/icon.png").toURI().toURL();
+        try { // Set icon
+            URL iconURL = StratX.class.getResource("/icon.png");
+            assert iconURL != null;
             ImageIcon icon = new ImageIcon(iconURL);
             frame.setIconImage(icon.getImage());
         } catch (Exception ignored) {}

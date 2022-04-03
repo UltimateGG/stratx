@@ -1,0 +1,5 @@
+binance:
+    isUS: true
+    
+    api-key: testr
+    api-secret: testr

@@ -21,11 +21,12 @@
     </repositories>
 
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/com.github.binance-exchange/binance-java-api -->
         <dependency>
-            <groupId>com.github.binance-exchange</groupId>
-            <artifactId>binance-java-api</artifactId>
-            <version>master</version>
+            <groupId>com.binance.api</groupId>
+            <artifactId>binance-api-client</artifactId>
+            <version>1.0.1</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/binance-api-client.jar</systemPath>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core -->
         <dependency>

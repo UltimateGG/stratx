@@ -19,7 +19,7 @@ import java.util.List;
 @SuppressWarnings("FieldCanBeLocal")
 public class BackTest {
     private final Logger LOGGER = LogManager.getLogger("BackTest");
-    private final Configuration CONFIG = new Configuration("config/config.yml");
+    private final Configuration CONFIG = new Configuration("config\\config.yml");
     private final String PRICE_DATA;
     private final double STARTING_BALANCE = CONFIG.getDouble("backtest.starting-balance", 100.0);
     private final boolean SHOW_SIGNALS = CONFIG.getBoolean("backtest.show-signals", true);

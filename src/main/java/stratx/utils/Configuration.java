@@ -14,7 +14,7 @@ public class Configuration {
     private boolean exists = false;
 
     public Configuration(String fileName) {
-        this(new File(fileName));
+        this(new File(StratX.DATA_FOLDER, fileName));
     }
 
     public Configuration(File file) {
