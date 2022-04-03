@@ -10,17 +10,21 @@ import stratx.utils.Mode;
 
 public class BinanceClient {
     private BinanceApiClientFactory factory;
-    private BinanceApiRestClient client;
-    private BinanceApiWebSocketClient ws_client;
+    private final BinanceApiRestClient CLIENT;
+    private final BinanceApiWebSocketClient WEBSOCKET;
+
 
     public BinanceClient(Configuration config) {
         if (config.getBoolean("binance.isUS", false))
             BinanceApiConfig.setBaseDomain("binance.us");
 
-        client = login(config.getString("binance.api-key"), config.getString("binance.api-secret"));
+        CLIENT = login(config.getString("binance.api-key"), config.getString("binance.api-secret"));
+        WEBSOCKET = factory.newWebSocketClient();
     }
 
     private BinanceApiRestClient login(String apiKey, String secretKey) {
+        StratX.log("Logging into Binance...");
+
         factory = BinanceApiClientFactory.newInstance(apiKey, secretKey);
         BinanceApiRestClient newClient = factory.newRestClient();
 
@@ -38,13 +42,10 @@ public class BinanceClient {
     }
 
     public BinanceApiRestClient get() {
-        return client;
+        return CLIENT;
     }
 
-    public BinanceApiWebSocketClient getWS() {
-        if (ws_client == null)
-            ws_client = factory.newWebSocketClient();
-
-        return ws_client;
+    public BinanceApiWebSocketClient getWebsocket() {
+        return WEBSOCKET;
     }
 }

@@ -4,7 +4,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stratx.strategies.GridTrading;
 import stratx.strategies.Strategy;
+import stratx.utils.Configuration;
 import stratx.utils.Mode;
+import stratx.utils.binance.BinanceClient;
 
 import java.io.File;
 import java.util.Arrays;
@@ -21,15 +23,29 @@ public class StratX {
     public static final String DATA_FOLDER = System.getProperty("user.dir")
             + (DEVELOPMENT_MODE ? "\\src\\main\\resources\\" : "\\stratx\\");
     public static Mode MODE = Mode.SIMULATION;
+    public static BinanceClient API = null;
 
-    // @TODO Temp entry point
     public static void main(String... args) {
+        new StratX();
+    }
+
+    private StratX() {
         Scanner scanner = new Scanner(System.in);
         LOGGER.info("Please select a mode: "  + Arrays.toString(Mode.values()));
 
         MODE = Mode.valueOf(scanner.next().toUpperCase().trim());
         LOGGER.info("Starting StratX in {} mode...", MODE);
 
+        // Log in to Binance
+        if (MODE != Mode.BACKTEST && MODE != Mode.DOWNLOAD)
+            API = new BinanceClient(new Configuration("config\\"
+                + (DEVELOPMENT_MODE ? "dev-" : "")
+                + "login.yml"));
+
+        if (true) {
+            Simulation.main(new String[]{});
+            return;
+        }
         if (MODE == Mode.DOWNLOAD) {
             new Downloader().createAndShowGUI();
         } else if (MODE == Mode.BACKTEST) backtestMode();
