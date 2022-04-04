@@ -1,12 +1,12 @@
 package stratx.utils;
 
-import stratx.BackTest;
 import stratx.StratX;
+import stratx.modes.Mode;
 
 public class Trade {
     private static int MAX_ID = 0;
     private final int ID = MAX_ID++;
-    private final BackTest simulation;
+    private final Mode mode;
     private boolean isOpen;
     private final Candlestick entryCandle;
     private final long entryTime;
@@ -18,21 +18,21 @@ public class Trade {
     private long exitTime;
     private String closeReason;
 
-    public Trade(BackTest simulation, double usd) {
+    public Trade(Mode mode, double usd) {
         if (usd <= 0.0) throw new IllegalArgumentException("USD must be positive to enter a trade");
-        this.simulation = simulation;
-        this.entryCandle = simulation.getCurrentCandle();
-        this.entryTime = entryCandle.getDate();
+        this.mode = mode;
+        this.entryCandle = mode.getCurrentCandle();
+        this.entryTime = entryCandle.getCloseTime();
         this.entryAmountUSD = usd;
-        this.coinAmount = usd / simulation.getCurrentPrice();
+        this.coinAmount = usd / mode.getCurrentPrice();
         this.isOpen = true;
 
-        if (simulation.shouldShowSignals())
-            simulation.getGUI().getChartRenderer().addSignalIndicatorOn(entryCandle.getID(), Signal.BUY);
+        if (mode.shouldShowSignals())
+            mode.getGUI().getCandlestickChart().addSignalIndicatorOn(entryCandle.getID(), Signal.BUY);
 
         StratX.trace("[BUY] {} {} @ ${}/ea for ${}",
                 MathUtils.COMMAS_2F.format(this.coinAmount),
-                simulation.getCoin(),
+                mode.getCoin(),
                 MathUtils.round(entryCandle.getClose(), 4),
                 MathUtils.COMMAS_2F.format(usd));
     }
@@ -76,18 +76,18 @@ public class Trade {
     public void close(String reason) {
         if (!isOpen) throw new IllegalStateException("Trade is already closed");
         this.isOpen = false;
-        this.exitCandle = simulation.getCurrentCandle();
-        this.exitTime = exitCandle.getDate();
+        this.exitCandle = mode.getCurrentCandle();
+        this.exitTime = exitCandle.getCloseTime();
         this.closeReason = reason;
 
-        if (simulation.shouldShowSignals())
-            simulation.getGUI().getChartRenderer().addSignalIndicatorOn(exitCandle.getID(), Signal.SELL);
+        if (mode.shouldShowSignals())
+            mode.getGUI().getCandlestickChart().addSignalIndicatorOn(exitCandle.getID(), Signal.SELL);
 
-        simulation.getLogger().info(this.toString());
+        mode.getLogger().info(this.toString());
         StratX.trace("[SELL] ({}) {} {} @ ${}/ea for profit of ${} ({}%)",
                 reason,
                 MathUtils.COMMAS_2F.format(this.coinAmount),
-                simulation.getCoin(),
+                mode.getCoin(),
                 MathUtils.round(exitCandle.getClose(), 4),
                 MathUtils.COMMAS_2F.format(getProfit()),
                 MathUtils.COMMAS_2F.format(getProfitPercent()));
@@ -105,7 +105,7 @@ public class Trade {
 
     /** Returns the current value of this trade in USD */
     public double getCurrentUSDWorth() {
-        double priceToUse = isOpen ? simulation.getCurrentPrice() : exitCandle.getClose();
+        double priceToUse = isOpen ? mode.getCurrentPrice() : exitCandle.getClose();
         return priceToUse * coinAmount;
     }
 

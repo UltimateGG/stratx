@@ -1,6 +1,6 @@
 package stratx.strategies;
 
-import stratx.BackTest;
+import stratx.modes.Mode;
 import stratx.utils.Candlestick;
 import stratx.utils.Signal;
 
@@ -9,12 +9,12 @@ public class GridTrading extends Strategy {
     private double baseLine = 0;
     private Signal currentSignal = Signal.HOLD;
 
-    public GridTrading(BackTest simulation, double gridSize) {
-        this(simulation, "grid.yml", gridSize);
+    public GridTrading(Mode mode, double gridSize) {
+        this(mode, "grid.yml", gridSize);
     }
 
-    public GridTrading(BackTest simulation, String configFile, double gridSize) {
-        super("Grid Trading", simulation, configFile);
+    public GridTrading(Mode mode, String configFile, double gridSize) {
+        super("Grid Trading", mode, configFile);
         this.gridSize = gridSize;
     }
 

@@ -1,7 +1,7 @@
 package stratx.indicators;
 
 import org.jfree.data.xy.XYSeries;
-import stratx.BackTest;
+import stratx.modes.Mode;
 import stratx.utils.Candlestick;
 import stratx.utils.Configuration;
 import stratx.utils.PriceHistory;
@@ -19,20 +19,20 @@ public class WMA extends Indicator {
     private float LINE_WIDTH = 2.0F;
 
 
-    public WMA(BackTest simulation, int period) {
-        super(simulation);
+    public WMA(Mode mode, int period) {
+        super(mode);
         this.period = period;
         this.priceHistory = new PriceHistory(period);
-        this.loadSettings(simulation.getConfig());
+        this.loadSettings(mode.getConfig());
     }
 
     @Override
     public void update(Candlestick candle) {
         priceHistory.add(candle);
 
-        if (simulation.isShowGUI() && SHOW_ON_CHART && priceHistory.length() >= period) {
-            if (wmaLine == null) wmaLine = simulation.getGUI().getChartRenderer().addEMALine(COLOR, LINE_WIDTH);
-            else wmaLine.add(candle.getDate(), getWMA());
+        if (mode.isShowGUI() && SHOW_ON_CHART && priceHistory.length() >= period) {
+            if (wmaLine == null) wmaLine = mode.getGUI().getCandlestickChart().addEMALine(COLOR, LINE_WIDTH);
+            else wmaLine.add(candle.getCloseTime(), getWMA());
         }
     }
 

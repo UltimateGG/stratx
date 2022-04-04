@@ -12,6 +12,7 @@ public class PriceHistory {
     }
 
     public void add(Candlestick candlestick) {
+        if (history.contains(candlestick)) throw new IllegalArgumentException("Candlestick already exists in history");
         history.add(candlestick);
         if (history.size() > maxLength) history.remove(0);
     }
@@ -31,6 +32,13 @@ public class PriceHistory {
     public Candlestick getLatest() {
         if (history.size() == 0) return null;
         return history.get(history.size() - 1);
+    }
+
+    public Candlestick getByTime(long closingTime) {
+        for (Candlestick candlestick : history)
+            if (candlestick.getCloseTime() == closingTime) return candlestick;
+
+        return null;
     }
 
     public void clear() {

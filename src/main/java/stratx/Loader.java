@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stratx.exceptions.LoaderParseException;
 import stratx.utils.Candlestick;
+import stratx.utils.Utils;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -68,6 +69,7 @@ public class Loader {
 
             long startTime = input.readLong();
             long endTime = input.readLong();
+            LOGGER.info("Price data range: {}", Utils.msToNice(endTime - startTime, true, false, false));
             Candlestick previous = null;
 
             while (input.available() > 0) {

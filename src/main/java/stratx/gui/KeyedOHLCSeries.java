@@ -10,12 +10,11 @@ public class KeyedOHLCSeries extends OHLCSeries {
         super(key);
     }
 
-    // We only fire notify on last candle if running huge backtest for performance
-    public void add(RegularTimePeriod period, double open, double high, double low, double close, int id, boolean isLast) {
+    public void add(RegularTimePeriod period, double open, double high, double low, double close, int id) {
         if (timeClass == null) timeClass = period.getClass();
         else if (!timeClass.equals(period.getClass()))
             throw new IllegalArgumentException("Can't mix RegularTimePeriod class types.");
 
-        super.add(new KeyedOHLCItem(period, open, high, low, close, id), isLast);
+        super.add(new KeyedOHLCItem(period, open, high, low, close, id), false);
     }
 }

@@ -1,15 +1,15 @@
 package stratx.indicators;
 
 
-import stratx.BackTest;
+import stratx.modes.Mode;
 import stratx.utils.Candlestick;
 import stratx.utils.Signal;
 
 public abstract class Indicator {
-    protected final BackTest simulation;
+    protected final Mode mode;
 
-    public Indicator(BackTest simulation) {
-        this.simulation = simulation;
+    public Indicator(Mode mode) {
+        this.mode = mode;
     }
 
     public abstract void update(Candlestick candle);

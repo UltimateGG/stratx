@@ -1,6 +1,19 @@
+coin: BTCUSD
+simulation-starting-balance: 100.0
+show-buy-sell-signals: true
+
 backtest:
-    starting-balance: 100.0
-    show-signals: true
+    show-gui: true
+
+downloader:
+    show-gui: true
+    break-seconds: 3
+    
+simulation:
+    show-gui: true
+
+live-trading:
+    show-gui: true
 
 indicators:
     ema:

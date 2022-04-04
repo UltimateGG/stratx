@@ -6,7 +6,6 @@ import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.api.client.config.BinanceApiConfig;
 import stratx.StratX;
 import stratx.utils.Configuration;
-import stratx.utils.Mode;
 
 public class BinanceClient {
     private BinanceApiClientFactory factory;
@@ -28,7 +27,7 @@ public class BinanceClient {
         factory = BinanceApiClientFactory.newInstance(apiKey, secretKey);
         BinanceApiRestClient newClient = factory.newRestClient();
 
-        if (StratX.MODE != Mode.BACKTEST && StratX.MODE != Mode.DOWNLOAD) {
+        if (StratX.MODE.requiresMarketDataStream()) {
             try {
                 if (!newClient.getAccount().isCanTrade())
                     throw new Exception("Binance account cannot trade");
@@ -38,6 +37,7 @@ public class BinanceClient {
             }
         }
 
+        StratX.log("Login successful");
         return newClient;
     }
 

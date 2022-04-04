@@ -1,7 +1,7 @@
 package stratx.strategies;
 
-import stratx.BackTest;
 import stratx.indicators.Indicator;
+import stratx.modes.Mode;
 import stratx.utils.*;
 
 import java.util.ArrayList;
@@ -76,25 +76,25 @@ public class Strategy {
     /** Whether to sell all trades on one sell signal, or only close one per signal */
     public boolean SELL_ALL_ON_SIGNAL = false;
 
-    private final BackTest simulation;
+    private final Mode mode;
     private final ArrayList<Indicator> indicators = new ArrayList<>();
     private String configName;
 
 
-    public Strategy(String name, BackTest simulation, Indicator... indicators) {
-        this(name, simulation, name.toLowerCase().replaceAll(" ", "_") + ".yml", indicators);
+    public Strategy(String name, Mode mode, Indicator... indicators) {
+        this(name, mode, name.toLowerCase().replaceAll(" ", "_") + ".yml", indicators);
     }
 
-    public Strategy(String name, BackTest simulation, String configFile, Indicator... indicators) {
+    public Strategy(String name, Mode mode, String configFile, Indicator... indicators) {
         this.name = name;
-        this.simulation = simulation;
+        this.mode = mode;
         this.indicators.addAll(Arrays.asList(indicators));
         this.configName = configFile;
 
-        simulation.getLogger().info("Loading strategy settings from " + configFile);
+        mode.getLogger().info("Loading strategy settings from " + configFile);
         Configuration config = new Configuration("config/strategies/" + configFile);
         if (!config.exists()) {
-            simulation.getLogger().info("Could not find or load config, using built-in settings");
+            mode.getLogger().info("Could not find or load config, using built-in settings");
             configName = "(built-ins)";
             return;
         }
@@ -131,8 +131,8 @@ public class Strategy {
 
         return (((MIN_BUY_SIGNALS == -1 && buySignals >= indicators.size()) || (buySignals >= MIN_BUY_SIGNALS && MIN_BUY_SIGNALS != -1))
                 && (buySignals >= sellSignals && DONT_BUY_IF_SELL_GREATER)
-                && (simulation.getAccount().getOpenTrades() < MAX_OPEN_TRADES)
-                && (simulation.getAccount().getBalance() > 0)
+                && (mode.getAccount().getOpenTrades() < MAX_OPEN_TRADES)
+                && (mode.getAccount().getBalance() > 0)
                 && amtUSD >= MIN_USD_PER_TRADE
         );
     }
@@ -143,7 +143,7 @@ public class Strategy {
         int sellSignals = getBuySellSignals().sellSignals;
         return (((MIN_SELL_SIGNALS == -1 && sellSignals >= indicators.size()) || (sellSignals >= MIN_SELL_SIGNALS && MIN_SELL_SIGNALS != -1))
                 && (SELL_BASED_ON_INDICATORS)
-                && (simulation.getAccount().getOpenTrades() > 0)
+                && (mode.getAccount().getOpenTrades() > 0)
         );
     }
 
@@ -163,7 +163,7 @@ public class Strategy {
     /** Called when a trade is opened to determine how much USD
      * it should be bought for. You may override this for custom implementations. */
     public double getBuyAmount() {
-        double bal = simulation.getAccount().getBalance();
+        double bal = mode.getAccount().getBalance();
         double buy = MIN_USD_PER_TRADE;
 
         // Percentage buy
@@ -192,7 +192,7 @@ public class Strategy {
         SELL_BASED_ON_INDICATORS = config.getBoolean("sell.based-on-indicators", SELL_BASED_ON_INDICATORS);
         SELL_ALL_ON_SIGNAL = config.getBoolean("sell.sell-all", SELL_ALL_ON_SIGNAL);
 
-        simulation.getLogger().info("Successfully loaded strategy settings");
+        mode.getLogger().info("Successfully loaded strategy settings");
     }
 
     public void addIndicator(Indicator indicator) {

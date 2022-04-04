@@ -2,24 +2,26 @@ package stratx.utils;
 
 import stratx.exceptions.InvalidCandlestickException;
 
-/** Immutable class representing a candlestick/OHLC values. */
+/** A class representing a candlestick/OHLC values. */
 public class Candlestick {
     private static int MAX_ID = 0;
     private int ID = MAX_ID++;
-    private final long date;
+    private final long closeTime;
+    private boolean isFinal;
     private final double open;
-    private final double high;
-    private final double low;
-    private final double close;
-    private final long volume;
+    private double high;
+    private double low;
+    private double close;
+    private long volume;
     private final Candlestick previous;
 
 
-    public Candlestick(long date, double open, double high, double low, double close, long volume, Candlestick previous) throws InvalidCandlestickException {
-        if (date < 0 || open < 0 || high < 0 || low < 0 || close < 0 || volume < 0)
+    public Candlestick(long closeTime, double open, double high, double low, double close, long volume, Candlestick previous) throws InvalidCandlestickException {
+        if (closeTime < 0 || open < 0 || high < 0 || low < 0 || close < 0 || volume < 0)
             throw new InvalidCandlestickException("Invalid candlestick values (Must be positive)");
 
-        this.date = date;
+        this.closeTime = closeTime;
+        this.isFinal = true;
 
         if (previous == null) {
             this.open = open;
@@ -37,6 +39,14 @@ public class Candlestick {
         this.previous = previous;
     }
 
+    public boolean isFinal() {
+        return isFinal;
+    }
+
+    public void setFinal(boolean isFinal) {
+        this.isFinal = isFinal;
+    }
+
     public double getOpen() {
         return open;
     }
@@ -45,20 +55,40 @@ public class Candlestick {
         return high;
     }
 
+    public void setHigh(double high) {
+        if (isFinal) throw new IllegalStateException("Cannot modify closed candlestick");
+        this.high = high;
+    }
+
     public double getLow() {
         return low;
+    }
+
+    public void setLow(double low) {
+        if (isFinal) throw new IllegalStateException("Cannot modify closed candlestick");
+        this.low = low;
     }
 
     public double getClose() {
         return close;
     }
 
+    public void setClose(double close) {
+        if (isFinal) throw new IllegalStateException("Cannot modify closed candlestick");
+        this.close = close;
+    }
+
     public long getVolume() {
         return volume;
     }
 
-    public long getDate() {
-        return date;
+    public void setVolume(long volume) {
+        if (isFinal) throw new IllegalStateException("Cannot modify closed candlestick");
+        this.volume = volume;
+    }
+
+    public long getCloseTime() {
+        return closeTime;
     }
 
     public int getID() {
@@ -79,7 +109,7 @@ public class Candlestick {
 
     @Override
     public String toString() {
-        return String.format("[Candlestick @ %s] O:%.2f, H:%.2f, L:%.2f, C:%.2f, V:%d ID:%d", date, open, high, low, close, volume, ID);
+        return String.format("[Candlestick @ %s] O:%.2f, H:%.2f, L:%.2f, C:%.2f, V:%d ID:%d", closeTime, open, high, low, close, volume, ID);
     }
 
     @Override
@@ -89,13 +119,13 @@ public class Candlestick {
         if (!(obj instanceof Candlestick)) return false;
 
         Candlestick other = (Candlestick) obj;
-        return this.ID == other.getID() && this.date == other.date && this.open == other.open && this.high == other.high && this.low == other.low && this.close == other.close && this.volume == other.volume;
+        return this.ID == other.getID() && this.closeTime == other.closeTime && this.open == other.open && this.high == other.high && this.low == other.low && this.close == other.close && this.volume == other.volume;
     }
 
     @Override
     public Candlestick clone() throws CloneNotSupportedException {
         super.clone();
-        Candlestick clone = new Candlestick(date, open, high, low, close, volume, this.previous);
+        Candlestick clone = new Candlestick(closeTime, open, high, low, close, volume, this.previous);
         clone.setID(ID); // Persist id
         return clone;
     }

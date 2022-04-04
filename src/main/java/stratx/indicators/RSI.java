@@ -5,14 +5,14 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import stratx.BackTest;
-import stratx.gui.ChartRenderer;
+import stratx.gui.CandlestickChartRenderer;
+import stratx.modes.Mode;
 import stratx.utils.*;
 
 import java.awt.*;
 
-import static stratx.gui.ChartRenderer.styleAxis;
-import static stratx.gui.ChartRenderer.stylePlot;
+import static stratx.gui.CandlestickChartRenderer.styleAxis;
+import static stratx.gui.CandlestickChartRenderer.stylePlot;
 
 public class RSI extends Indicator {
     private final int period;
@@ -34,13 +34,13 @@ public class RSI extends Indicator {
     private Color MIDDLE_COLOR = new Color(0x6C6C6C);
     private float LINE_WIDTH = 1.5F;
 
-    public RSI(BackTest simulation, int period, double overbought, double oversold) {
-        super(simulation);
+    public RSI(Mode mode, int period, double overbought, double oversold) {
+        super(mode);
         this.period = period;
         this.overbought = overbought;
         this.oversold = oversold;
         this.priceHistory = new PriceHistory(period);
-        this.loadSettings(simulation.getConfig());
+        this.loadSettings(mode.getConfig());
     }
 
     @Override
@@ -48,8 +48,8 @@ public class RSI extends Indicator {
         priceHistory.add(candle);
 
         if (SHOW_ON_CHART && priceHistory.length() >= period) {
-            if (rsiLine == null && simulation.isShowGUI()) { // Create RSI overlay
-                ChartRenderer renderer = simulation.getGUI().getChartRenderer();
+            if (rsiLine == null && mode.isShowGUI()) { // Create RSI overlay
+                CandlestickChartRenderer renderer = mode.getGUI().getCandlestickChart();
                 XYLineAndShapeRenderer emaRenderer = new XYLineAndShapeRenderer(true, false);
                 emaRenderer.setSeriesPaint(0, OVERBOUGHT_COLOR);
                 emaRenderer.setSeriesStroke(0, new BasicStroke(1.0F));
@@ -72,9 +72,9 @@ public class RSI extends Indicator {
                 oversoldLine = addLine(OVERSOLD_COLOR, 1.0F);
                 midLine = addLine(MIDDLE_COLOR, 1.0F);
                 rsiLine = addLine(COLOR, LINE_WIDTH);
-                renderer.getMainPlot().add(rsiSubplot, 2);
+                renderer.addPlot(rsiSubplot);
             } else if (overboughtLine != null) {
-                long x = candle.getDate();
+                long x = candle.getCloseTime();
                 overboughtLine.add(x, overbought);
                 oversoldLine.add(x, oversold);
                 if (SHOW_MID_LINE) midLine.add(x, (overbought + oversold) / 2);
@@ -96,7 +96,7 @@ public class RSI extends Indicator {
 
         rsiSubplot.setDataset(num, dataset);
         rsiSubplot.setRenderer(num, renderer);
-        simulation.addLock(series);
+        mode.getGUI().getCandlestickChart().addPlot(rsiSubplot);
         return series;
     }
 

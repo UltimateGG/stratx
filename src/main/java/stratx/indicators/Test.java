@@ -1,6 +1,6 @@
 package stratx.indicators;
 
-import stratx.BackTest;
+import stratx.modes.Mode;
 import stratx.utils.Candlestick;
 import stratx.utils.Signal;
 
@@ -10,8 +10,8 @@ public class Test extends Indicator { // @TODO
     private boolean wasLastBearish = false;
     private Signal signal = Signal.HOLD;
 
-    public Test(BackTest simulation) {
-        super(simulation);
+    public Test(Mode mode) {
+        super(mode);
     }
 
     @Override
