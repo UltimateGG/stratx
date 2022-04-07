@@ -1,12 +1,8 @@
-package stratx.gui;
-
-import java.io.Serializable;
-import java.util.List;
-import java.util.Objects;
+package stratx.gui.candlestick;
 
 import org.jfree.chart.HashUtils;
-import org.jfree.chart.util.ObjectUtils;
 import org.jfree.chart.util.Args;
+import org.jfree.chart.util.ObjectUtils;
 import org.jfree.data.general.DatasetChangeEvent;
 import org.jfree.data.time.RegularTimePeriod;
 import org.jfree.data.time.TimePeriodAnchor;
@@ -14,6 +10,10 @@ import org.jfree.data.time.ohlc.OHLCItem;
 import org.jfree.data.time.ohlc.OHLCSeries;
 import org.jfree.data.xy.AbstractXYDataset;
 import org.jfree.data.xy.XYDataset;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * A collection of {@link KeyedOHLCSeries} objects.

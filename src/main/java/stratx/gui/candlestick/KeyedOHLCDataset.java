@@ -1,4 +1,4 @@
-package stratx.gui;
+package stratx.gui.candlestick;
 
 import org.jfree.data.xy.OHLCDataset;
 

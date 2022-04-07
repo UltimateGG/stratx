@@ -2,7 +2,7 @@ package stratx.modes;
 
 import stratx.Loader;
 import stratx.StratX;
-import stratx.gui.GuiFactory;
+import stratx.gui.Gui;
 import stratx.utils.Candlestick;
 import stratx.utils.MathUtils;
 import stratx.utils.Trade;
@@ -16,12 +16,11 @@ import java.util.Scanner;
 @SuppressWarnings("FieldCanBeLocal")
 public class BackTest extends Mode {
     private final String PRICE_DATA;
-    private final boolean SHOW_SIGNALS = CONFIG.getBoolean("backtest.show-signals", true);
     private List<Candlestick> data;
 
 
-    public BackTest(boolean showGui) {
-        super(Type.BACKTEST, null, showGui);
+    public BackTest() {
+        super(Type.BACKTEST, null);
         this.PRICE_DATA = getFileFromUser().getAbsolutePath();
 
         this.setCoin(PRICE_DATA.substring(PRICE_DATA.lastIndexOf('\\') + 1).split("_")[0]);
@@ -52,7 +51,7 @@ public class BackTest extends Mode {
 
     private void runTest() {
         if (SHOW_GUI) {
-            GUI = GuiFactory.createStaticGui("StratX Backtest", 1800, 900);
+            GUI = new Gui("StratX Backtest", 1800, 900, false);
             GUI.setIcon("/icon.png");
             GUI.addCandlestickChart(this.getCoin());
         }

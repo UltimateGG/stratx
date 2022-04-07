@@ -5,14 +5,14 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import stratx.gui.CandlestickChartRenderer;
+import stratx.gui.candlestick.CandlestickChart;
 import stratx.modes.Mode;
 import stratx.utils.*;
 
 import java.awt.*;
 
-import static stratx.gui.CandlestickChartRenderer.styleAxis;
-import static stratx.gui.CandlestickChartRenderer.stylePlot;
+import static stratx.gui.candlestick.CandlestickChart.styleAxis;
+import static stratx.gui.candlestick.CandlestickChart.stylePlot;
 
 public class RSI extends Indicator {
     private final int period;
@@ -49,7 +49,7 @@ public class RSI extends Indicator {
 
         if (SHOW_ON_CHART && priceHistory.length() >= period) {
             if (rsiLine == null && mode.isShowGUI()) { // Create RSI overlay
-                CandlestickChartRenderer renderer = mode.getGUI().getCandlestickChart();
+                CandlestickChart renderer = mode.getGUI().getCandlestickChart();
                 XYLineAndShapeRenderer emaRenderer = new XYLineAndShapeRenderer(true, false);
                 emaRenderer.setSeriesPaint(0, OVERBOUGHT_COLOR);
                 emaRenderer.setSeriesStroke(0, new BasicStroke(1.0F));

@@ -4,8 +4,8 @@ import stratx.utils.Candlestick;
 
 // @TODO
 public class LiveTrading extends Mode {
-    public LiveTrading(String coin, boolean showGui) {
-        super(Type.LIVE, coin, showGui);
+    public LiveTrading(String coin) {
+        super(Type.LIVE, coin);
     }
 
     @Override

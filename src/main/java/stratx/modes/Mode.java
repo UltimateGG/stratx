@@ -20,20 +20,23 @@ public abstract class Mode {
     protected Gui GUI;
     protected final Logger LOGGER;
     protected final Configuration CONFIG = new Configuration("\\config\\config.yml");
-    protected final double STARTING_BALANCE = CONFIG.getDouble("backtest.starting-balance", 100.0);
+    protected final double STARTING_BALANCE;
     protected Closeable candlestickEventListener;
     protected PriceHistory priceHistory;
     protected Candlestick currentCandle = null;
     protected Candlestick previousCandle = null;
     protected Strategy strategy;
-    protected final Account ACCOUNT = new Account(STARTING_BALANCE);
+    protected final Account ACCOUNT;
 
 
-    public Mode(Type type, String coin, boolean showGui) {
+    public Mode(Type type, String coin) {
         this.TYPE = type;
         this.COIN = coin;
-        this.SHOW_GUI = showGui;
+        this.SHOW_GUI = CONFIG.getBoolean(type.getConfigKey() + ".show-gui", true);
         this.LOGGER = LogManager.getLogger(type.toString());
+
+        this.STARTING_BALANCE = CONFIG.getDouble((TYPE == Type.SIMULATION ? "simulation" : "backtest") + ".starting-balance", 100.0);
+        this.ACCOUNT = new Account(STARTING_BALANCE);
     }
 
     public void begin(Strategy strategy) {
@@ -183,19 +186,25 @@ public abstract class Mode {
     }
 
     public static enum Type {
-        BACKTEST(false),
-        DOWNLOAD(false),
-        SIMULATION(true),
-        LIVE(true);
+        BACKTEST(false, "backtest"),
+        DOWNLOAD(false, "downloader"),
+        SIMULATION(true, "simulation"),
+        LIVE(true, "live-trading");
 
         private final boolean requiresMarketDataStream;
+        private final String configKey;
 
-        Type(boolean requiresMarketDataStream) {
+        Type(boolean requiresMarketDataStream, String configKey) {
             this.requiresMarketDataStream = requiresMarketDataStream;
+            this.configKey = configKey;
         }
 
         public boolean requiresMarketDataStream() {
             return requiresMarketDataStream;
+        }
+
+        public String getConfigKey() {
+            return configKey;
         }
     }
 }

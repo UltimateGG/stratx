@@ -4,6 +4,7 @@ show-buy-sell-signals: true
 
 backtest:
     show-gui: true
+    starting-balance: 100.0
 
 downloader:
     show-gui: true
@@ -11,6 +12,7 @@ downloader:
     
 simulation:
     show-gui: true
+    starting-balance: 100.0
 
 live-trading:
     show-gui: true

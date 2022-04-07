@@ -52,10 +52,10 @@ public class StratX {
 
         if (MODE.requiresMarketDataStream()) LOGGER.info("Trading {}", coin);
 
-        if (MODE == Mode.Type.BACKTEST) runningMode = new BackTest(CONFIG.getBoolean("backtest.show-gui", true));
-        else if (MODE == Mode.Type.DOWNLOAD) runningMode = new Downloader(CONFIG.getBoolean("downloader.show-gui", true));
-        else if (MODE == Mode.Type.SIMULATION) runningMode = new Simulation(coin, CONFIG.getBoolean("simulation.show-gui", true));
-        else if (MODE == Mode.Type.LIVE) runningMode = new LiveTrading(coin, CONFIG.getBoolean("live-trading.show-gui", true));
+        if (MODE == Mode.Type.BACKTEST) runningMode = new BackTest();
+        else if (MODE == Mode.Type.DOWNLOAD) runningMode = new Downloader();
+        else if (MODE == Mode.Type.SIMULATION) runningMode = new Simulation(coin);
+        else if (MODE == Mode.Type.LIVE) runningMode = new LiveTrading(coin);
         else {
             LOGGER.error("Invalid mode {}", MODE);
             System.exit(1);

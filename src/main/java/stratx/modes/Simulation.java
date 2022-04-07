@@ -4,8 +4,8 @@ import stratx.utils.Candlestick;
 
 
 public class Simulation extends Mode {
-    public Simulation(String coin, boolean showGui) {
-        super(Type.SIMULATION, coin, showGui);
+    public Simulation(String coin) {
+        super(Type.SIMULATION, coin);
     }
 
     @Override

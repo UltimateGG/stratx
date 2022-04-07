@@ -6,13 +6,13 @@ import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
 import com.github.lgooddatepicker.components.DatePicker;
 import stratx.StratX;
+import stratx.gui.Gui;
+import stratx.gui.GuiTheme;
 import stratx.utils.MathUtils;
 import stratx.utils.Utils;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
 import java.io.*;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -33,8 +33,8 @@ public class Downloader extends Mode {
     private JTextArea console;
 
 
-    public Downloader(boolean showGui) {
-        super(Type.DOWNLOAD, null, showGui);
+    public Downloader() {
+        super(Type.DOWNLOAD, null);
     }
 
     @Override
@@ -47,49 +47,20 @@ public class Downloader extends Mode {
     }
 
     public void createAndShowGUI() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setPreferredSize(new Dimension(450, 400));
+        Gui newGui = new Gui("StratX Downloader", 450, 600, false);
+        newGui.setCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        newGui.addPanel();
 
-        JTextField symbolField = new JTextField("BTCUSDT");
-        setupComponent(symbolField, "Symbol", panel);
+        JTextField symbolField = newGui.addTextbox("Symbol", "BTCUSDT");
+        JComboBox<?> intervalBox = newGui.addDropdown("Interval", new JComboBox<>(CandlestickInterval.values()), 2);
+        DatePicker startDatePicker = newGui.addDatePicker(null, "Start Date");
+        DatePicker endDatePicker = newGui.addDatePicker(null, "End Date");
 
-        DatePicker startDatePicker = new DatePicker();
-        startDatePicker.getComponentToggleCalendarButton().setContentAreaFilled(false);
-        startDatePicker.setDateToToday();
-        startDatePicker.setDate(startDatePicker.getDate().minusDays(31));
-        setupComponent(startDatePicker, "Start Date", panel);
+        startDatePicker.setDate(startDatePicker.getDate().minusDays(31)); // Default to 31 days back
+        newGui.addPaddingY(20);
 
-        DatePicker endDatePicker = new DatePicker();
-        endDatePicker.setDateToToday();
-        endDatePicker.getComponentToggleCalendarButton().setContentAreaFilled(false);
-        setupComponent(endDatePicker, "End Date", panel);
-
-        JComboBox<CandlestickInterval> intervalBox = new JComboBox<>(CandlestickInterval.values());
-        intervalBox.setSelectedItem(CandlestickInterval.FIVE_MINUTES);
-        setupComponent(intervalBox, "Interval", panel);
-
-        downloadButton = new JButton("Download");
-        setupComponent(downloadButton, null, panel);
-
-        console = new JTextArea();
-        console.setEditable(false);
-        console.setLineWrap(true);
-        console.setWrapStyleWord(true);
-        console.setAutoscrolls(true);
-        console.setFont(new Font("Courier New", Font.PLAIN, 12));
-
-        JScrollPane scrollPane = new JScrollPane(console);
-        scrollPane.setPreferredSize(new Dimension(panel.getPreferredSize().width - 30, 150));
-        scrollPane.setSize(scrollPane.getPreferredSize());
-        scrollPane.setMaximumSize(scrollPane.getPreferredSize());
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setViewportView(console);
-        scrollPane.setAutoscrolls(true);
-
-        panel.add(Box.createRigidArea(new Dimension(0, 20)));
-        panel.add(scrollPane);
+        downloadButton = newGui.addButton("Download", new Color(0x15A4EF), GuiTheme.TEXT_COLOR, null, 10);
+        console = newGui.addConsoleLog(150);
 
         downloadButton.addActionListener(e -> {
             console.setText("");
@@ -112,58 +83,8 @@ public class Downloader extends Mode {
             }).start();
         });
 
-        JFrame frame = new JFrame("StratX Downloader");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setResizable(false);
-        frame.setContentPane(panel);
-        frame.pack();
-        frame.setVisible(true);
-
-        log("Downloader initialized");
-    }
-
-    private void setupComponent(JComponent component, String label, JPanel panel) {
-        component.setFont(new Font("Arial", Font.PLAIN, 12));
-        component.setForeground(Color.BLACK);
-        component.setAlignmentX(Component.CENTER_ALIGNMENT);
-        component.setPreferredSize(new Dimension(panel.getPreferredSize().width - 30, 35));
-        component.setMaximumSize(component.getPreferredSize());
-        component.setSize(component.getPreferredSize());
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-
-        if (component instanceof JTextField) {
-            JTextField textField = (JTextField) component;
-            textField.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.BLACK));
-
-            textField.addFocusListener(new FocusListener() {
-                @Override
-                public void focusGained(FocusEvent e) {
-                    textField.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(0x109CEC)));
-                }
-
-                @Override
-                public void focusLost(FocusEvent e) {
-                    textField.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.BLACK));
-                }
-            });
-        } else if (component instanceof JButton) {
-            JButton button = (JButton) component;
-            button.setContentAreaFilled(false);
-            panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        }
-
-        if (label != null) {
-            JLabel labelComponent = new JLabel(label);
-            labelComponent.setFont(new Font("Arial", Font.PLAIN, 12));
-            labelComponent.setForeground(Color.BLACK);
-            labelComponent.setAlignmentX(Component.CENTER_ALIGNMENT);
-            labelComponent.setPreferredSize(new Dimension(panel.getPreferredSize().width - 30, 30));
-            labelComponent.setMaximumSize(labelComponent.getPreferredSize());
-            labelComponent.setSize(labelComponent.getPreferredSize());
-            panel.add(labelComponent);
-        }
-
-        panel.add(component);
+        newGui.show();
+        log("Console: Downloader initialized");
     }
 
     private String createFile(String symbol, CandlestickInterval interval, long startTime) throws IOException {
@@ -199,7 +120,7 @@ public class Downloader extends Mode {
 
         if (!isValidSymbol(symbol)) {
             log("ERROR: Invalid symbol: " + symbol);
-            System.exit(1);
+            throw new IllegalArgumentException("Invalid symbol: " + symbol);
         }
 
         log("Downloading %s on %s interval (%s candlesticks/%s requests)..", symbol, interval.getIntervalId(), MathUtils.COMMAS.format(totalCandles), numRequests);
