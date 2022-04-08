@@ -163,7 +163,7 @@ public class Gui {
         });
 
         contentPanel.add(button);
-        addPaddingY(20);
+        addPaddingY(10);
         return button;
     }
 

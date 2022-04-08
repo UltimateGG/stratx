@@ -3,26 +3,39 @@ package stratx.modes;
 import stratx.Loader;
 import stratx.StratX;
 import stratx.gui.Gui;
+import stratx.gui.GuiTheme;
 import stratx.utils.Candlestick;
 import stratx.utils.MathUtils;
 import stratx.utils.Trade;
 import stratx.utils.Utils;
 
+import javax.swing.*;
+import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 
 @SuppressWarnings("FieldCanBeLocal")
 public class BackTest extends Mode {
-    private final String PRICE_DATA;
+    private String PRICE_DATA;
     private List<Candlestick> data;
 
 
     public BackTest() {
         super(Type.BACKTEST, null);
-        this.PRICE_DATA = getFileFromUser().getAbsolutePath();
 
+        if (GraphicsEnvironment.isHeadless()) {
+            setup(getFileFromCommandline().getAbsolutePath());
+            this.begin();
+        } else {
+            showFilePickerGui();
+        }
+    }
+
+    private void setup(String priceDataFile) {
+        this.PRICE_DATA = priceDataFile;
         this.setCoin(PRICE_DATA.substring(PRICE_DATA.lastIndexOf('\\') + 1).split("_")[0]);
         this.loadData(this.PRICE_DATA); // Load the price data in
     }
@@ -159,7 +172,50 @@ public class BackTest extends Mode {
         LOGGER.info("By %: " + worstTradePercent);
     }
 
-    private static File getFileFromUser() {
+    private File getFileFromCommandline() {
+        ArrayList<File> files = getValidFiles();
+
+        StratX.log("Found {} files. Please select a file to test on:", files.size());
+        for (int i = 1; i < files.size(); i++) StratX.log("[{}] {}", i, files.get(i).getName());
+
+        StratX.log("Number: "); // @TODO config for max open trade time?, market data stream
+        Scanner scanner = new Scanner(System.in);
+        int fileIndex = scanner.nextInt();
+
+        if (fileIndex < 1 || fileIndex > files.size()) {
+            StratX.getLogger().error("Invalid file index {}", fileIndex);
+            System.exit(1);
+        }
+
+        File file = files.get(fileIndex);
+        StratX.log("Selected {}", file.getName());
+
+        return file;
+    }
+
+    private void showFilePickerGui() {
+        Gui gui = new Gui("StratX Backtest", 350, 170, false);
+        ArrayList<File> files = getValidFiles();
+        String[] fileNames = new String[files.size()];
+
+        for (int i = 0; i < files.size(); i++) fileNames[i] = files.get(i).getName().replace(".strx", "");
+
+        gui.addPanel();
+        JComboBox<?> fileSelect = gui.addDropdown("Select Backtest File", new JComboBox<>(fileNames), 0);
+        gui.addPaddingY(10);
+        gui.addButton("Run", GuiTheme.INFO_COLOR, GuiTheme.TEXT_COLOR, null, 10).addActionListener(e -> {
+            File file = files.get(fileSelect.getSelectedIndex());
+            if (file != null) {
+                setup(file.getAbsolutePath());
+                gui.close();
+                this.begin();
+            }
+        });
+
+        gui.show();
+    }
+
+    private ArrayList<File> getValidFiles() {
         File[] files = new File(StratX.DATA_FOLDER + "\\downloader\\").listFiles();
 
         if (files == null || files.length == 0) {
@@ -167,21 +223,10 @@ public class BackTest extends Mode {
             System.exit(1);
         }
 
-        StratX.log("Found {} files. Please select a file to test on:", files.length);
-        for (int i = 1; i < files.length; i++) StratX.log("[{}] {}", i, files[i].getName());
+        List<File> validFiles = new ArrayList<>();
+        for (File file : files)
+            if (file.getName().endsWith(".strx")) validFiles.add(file);
 
-        StratX.log("Number: "); // @TODO config for max open trade time?, market data stream
-        Scanner scanner = new Scanner(System.in);
-        int fileIndex = scanner.nextInt();
-
-        if (fileIndex < 1 || fileIndex > files.length || !files[fileIndex].getName().endsWith(".strx")) {
-            StratX.getLogger().error("Invalid file index {}", fileIndex);
-            System.exit(1);
-        }
-
-        File file = files[fileIndex];
-        StratX.log("Selected {}", file.getName());
-
-        return file;
+        return new ArrayList<>(validFiles);
     }
 }

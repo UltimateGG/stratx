@@ -12,7 +12,6 @@ import stratx.utils.MathUtils;
 import stratx.utils.Utils;
 
 import javax.swing.*;
-import java.awt.*;
 import java.io.*;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -35,6 +34,7 @@ public class Downloader extends Mode {
 
     public Downloader() {
         super(Type.DOWNLOAD, null);
+        this.begin();
     }
 
     @Override
@@ -59,7 +59,8 @@ public class Downloader extends Mode {
         startDatePicker.setDate(startDatePicker.getDate().minusDays(31)); // Default to 31 days back
         newGui.addPaddingY(20);
 
-        downloadButton = newGui.addButton("Download", new Color(0x15A4EF), GuiTheme.TEXT_COLOR, null, 10);
+        downloadButton = newGui.addButton("Download", GuiTheme.INFO_COLOR, GuiTheme.TEXT_COLOR, null, 10);
+        newGui.addPaddingY(10);
         console = newGui.addConsoleLog(150);
 
         downloadButton.addActionListener(e -> {

@@ -8,6 +8,7 @@ import stratx.gui.Gui;
 import stratx.strategies.Strategy;
 import stratx.utils.*;
 
+import java.awt.*;
 import java.io.Closeable;
 
 /** Shell/base class for different modes. Live & Simulation mode need
@@ -32,15 +33,14 @@ public abstract class Mode {
     public Mode(Type type, String coin) {
         this.TYPE = type;
         this.COIN = coin;
-        this.SHOW_GUI = CONFIG.getBoolean(type.getConfigKey() + ".show-gui", true);
+        this.SHOW_GUI = !GraphicsEnvironment.isHeadless() && CONFIG.getBoolean(type.getConfigKey() + ".show-gui", true);
         this.LOGGER = LogManager.getLogger(type.toString());
 
         this.STARTING_BALANCE = CONFIG.getDouble((TYPE == Type.SIMULATION ? "simulation" : "backtest") + ".starting-balance", 100.0);
         this.ACCOUNT = new Account(STARTING_BALANCE);
     }
 
-    public void begin(Strategy strategy) {
-        this.strategy = strategy;
+    public void begin() {
         if (TYPE.requiresMarketDataStream()) setupMarketDataStream();
         ACCOUNT.reset();
         this.start();
@@ -183,6 +183,10 @@ public abstract class Mode {
 
     public Account getAccount() {
         return ACCOUNT;
+    }
+
+    public void setStrategy(Strategy strat) {
+        strategy = strat;
     }
 
     public static enum Type {

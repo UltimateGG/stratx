@@ -8,4 +8,5 @@ public class GuiTheme {
     public static final Color PRIMARY_COLOR = new Color(0x171A21);
     public static final Color SECONDARY_COLOR = new Color(0x222272F);
     public static final Color TEXT_COLOR = new Color(0xE0E0E0);
+    public static final Color INFO_COLOR = new Color(0x15A4EF);
 }
