@@ -3,7 +3,6 @@ package stratx;
 import com.sun.istack.internal.NotNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import stratx.exceptions.LoaderParseException;
 import stratx.utils.Candlestick;
 import stratx.utils.Utils;
 
@@ -34,12 +33,12 @@ public class Loader {
         return new ArrayList<>();
     }
 
-    private static List<Candlestick> doLoad(File file) throws LoaderParseException {
+    private static List<Candlestick> doLoad(File file) throws ParseException {
         if (file == null || !file.exists())
-            throw new LoaderParseException("File does not exist");
+            throw new ParseException("File does not exist");
 
         if (!file.getName().endsWith(".strx"))
-            throw new LoaderParseException("File is not a strx file");
+            throw new ParseException("File is not a strx file");
 
         Loader.INSTANCE = new Loader();
         Loader.INSTANCE.dataFile = file;
@@ -48,7 +47,7 @@ public class Loader {
         Loader.INSTANCE.load(data);
 
         if (data.size() == 0)
-            throw new LoaderParseException("Invalid price data file or format");
+            throw new ParseException("Invalid price data file or format");
 
         System.gc(); // Clear all strings from loading the file
         return Collections.unmodifiableList(data);
@@ -64,7 +63,7 @@ public class Loader {
                     || input.readUnsignedByte() != 0xb4
                     || input.readUnsignedByte() != 0xff
                     || input.readUnsignedByte() != 0x01) {
-                throw new LoaderParseException("Not a valid strx file! (Or outdated version)");
+                throw new ParseException("Not a valid strx file! (Or outdated version)");
             }
 
             long startTime = input.readLong();
@@ -88,6 +87,12 @@ public class Loader {
             }
         } catch (Exception e) {
             LOGGER.error("Error while loading data: ", e);
+        }
+    }
+
+    public static class ParseException extends Exception {
+        public ParseException(String message) {
+            super(message);
         }
     }
 }

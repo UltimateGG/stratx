@@ -1,11 +1,12 @@
 package stratx.modes;
 
+import stratx.strategies.Strategy;
 import stratx.utils.Candlestick;
 
 // @TODO
 public class LiveTrading extends Mode {
-    public LiveTrading(String coin) {
-        super(Type.LIVE, coin);
+    public LiveTrading(Strategy strategy, String coin) {
+        super(Type.LIVE, strategy, coin);
     }
 
     @Override

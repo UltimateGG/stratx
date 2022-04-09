@@ -5,9 +5,12 @@ import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
 import com.github.lgooddatepicker.components.DatePicker;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import stratx.StratX;
 import stratx.gui.Gui;
 import stratx.gui.GuiTheme;
+import stratx.utils.Configuration;
 import stratx.utils.MathUtils;
 import stratx.utils.Utils;
 
@@ -21,32 +24,20 @@ import java.util.Date;
 import java.util.List;
 
 @SuppressWarnings("FieldCanBeLocal")
-public class Downloader extends Mode {
+public class Downloader {
     private final BinanceApiRestClient CLIENT = BinanceApiClientFactory.newInstance().newRestClient(); // No credentials needed
     private final int MAX_CANDLES_PER_REQUEST = 1000; // Binance limitation
     private final String DATA_FOLDER = StratX.DATA_FOLDER + "downloader\\";
+    private final Configuration CONFIG = new Configuration("\\config\\config.yml");
     private final int BREAK_SECONDS = CONFIG.getInt("downloader.break-seconds", 3);
+    private final Logger LOGGER = LogManager.getLogger("DOWNLOADER");
 
     private boolean downloading = false;
     private JButton downloadButton;
     private JTextArea console;
 
 
-    public Downloader() {
-        super(Type.DOWNLOAD, null);
-        this.begin();
-    }
-
-    @Override
-    protected void start() {
-        if (this.SHOW_GUI)
-            createAndShowGUI();
-        else {
-            // TODO add command line arguments
-        }
-    }
-
-    public void createAndShowGUI() {
+    public void run() {
         Gui newGui = new Gui("StratX Downloader", 450, 600, false);
         newGui.setCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         newGui.addPanel();
@@ -211,10 +202,4 @@ public class Downloader extends Mode {
     public boolean isDownloading() {
         return downloading;
     }
-
-    @Override
-    protected void onPriceUpdate(double prevPrice, double newPrice) {}
-
-    @Override
-    protected void onCandleClose(stratx.utils.Candlestick candle) {}
 }

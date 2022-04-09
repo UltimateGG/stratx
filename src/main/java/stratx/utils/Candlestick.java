@@ -1,7 +1,5 @@
 package stratx.utils;
 
-import stratx.exceptions.InvalidCandlestickException;
-
 /** A class representing a candlestick/OHLC values. */
 public class Candlestick {
     private static int MAX_ID = 0;
@@ -16,9 +14,14 @@ public class Candlestick {
     private final Candlestick previous;
 
 
-    public Candlestick(long closeTime, double open, double high, double low, double close, long volume, Candlestick previous) throws InvalidCandlestickException {
+    public Candlestick(long closeTime, double open, double high, double low, double close, long volume, Candlestick previous, boolean isFinal) throws RuntimeException {
+        this(closeTime, open, high, low, close, volume, previous);
+        this.isFinal = isFinal;
+    }
+
+    public Candlestick(long closeTime, double open, double high, double low, double close, long volume, Candlestick previous) throws RuntimeException {
         if (closeTime < 0 || open < 0 || high < 0 || low < 0 || close < 0 || volume < 0)
-            throw new InvalidCandlestickException("Invalid candlestick values (Must be positive)");
+            throw new RuntimeException("Invalid candlestick values (Must be positive)");
 
         this.closeTime = closeTime;
         this.isFinal = true;

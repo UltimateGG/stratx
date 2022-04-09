@@ -1,7 +1,7 @@
 package stratx.indicators;
 
 import org.jfree.data.xy.XYSeries;
-import stratx.modes.Mode;
+import stratx.StratX;
 import stratx.utils.Candlestick;
 import stratx.utils.Configuration;
 import stratx.utils.PriceHistory;
@@ -19,19 +19,18 @@ public class WMA extends Indicator {
     private float LINE_WIDTH = 2.0F;
 
 
-    public WMA(Mode mode, int period) {
-        super(mode);
+    public WMA(int period) {
         this.period = period;
         this.priceHistory = new PriceHistory(period);
-        this.loadSettings(mode.getConfig());
+        this.loadSettings();
     }
 
     @Override
     public void update(Candlestick candle) {
         priceHistory.add(candle);
 
-        if (mode.isShowGUI() && SHOW_ON_CHART && priceHistory.length() >= period) {
-            if (wmaLine == null) wmaLine = mode.getGUI().getCandlestickChart().addEMALine(COLOR, LINE_WIDTH);
+        if (StratX.getCurrentMode().isShowGUI() && SHOW_ON_CHART && priceHistory.length() >= period) {
+            if (wmaLine == null) wmaLine = StratX.getCurrentMode().getGUI().getCandlestickChart().addEMALine(COLOR, LINE_WIDTH);
             else wmaLine.add(candle.getCloseTime(), getWMA());
         }
     }
@@ -57,7 +56,8 @@ public class WMA extends Indicator {
         return sum / denom;
     }
 
-    public void loadSettings(Configuration config) {
+    public void loadSettings() {
+        Configuration config = StratX.getConfig();
         SHOW_ON_CHART = config.getBoolean("indicators.wma.show-on-chart", SHOW_ON_CHART);
         COLOR = config.getColor("indicators.wma.color", COLOR);
         LINE_WIDTH = (float) config.getDouble("indicators.wma.line-width", LINE_WIDTH);

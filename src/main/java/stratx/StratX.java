@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stratx.gui.Gui;
 import stratx.gui.GuiTheme;
+import stratx.indicators.Test;
 import stratx.modes.*;
 import stratx.strategies.GridTrading;
 import stratx.strategies.Strategy;
@@ -28,12 +29,9 @@ public class StratX {
     public static Mode.Type MODE = Mode.Type.SIMULATION;
     public static BinanceClient API = null;
     private static final Configuration CONFIG = new Configuration("config\\config.yml");
+    private static Mode currentMode = null;
 
     public static void main(String... args) {
-        new StratX();
-    }
-
-    private StratX() {
         if (System.getProperty("stratx.mode") != null) {
             launch(Mode.Type.valueOf(System.getProperty("stratx.mode").toUpperCase()));
         } else if (!GraphicsEnvironment.isHeadless()) {
@@ -43,36 +41,48 @@ public class StratX {
         }
     }
 
+    private StratX() {}
+
     private static void launch(Mode.Type mode) {
         MODE = mode;
         LOGGER.info("Starting StratX in {} mode...", MODE);
 
-        // Log in to Binance
-        if (MODE.requiresMarketDataStream())
-            API = new BinanceClient(new Configuration("config\\"
-                    + (DEVELOPMENT_MODE ? "dev-" : "")
-                    + "login.yml"));
-
-        final String coin = CONFIG.getString("coin");
-        if (coin == null) {
-            LOGGER.error("Coin is not set in config.yml");
-            System.exit(1);
+        if (MODE == Mode.Type.DOWNLOAD) {
+            new Downloader().run();
+            return;
         }
 
-        if (MODE.requiresMarketDataStream()) LOGGER.info("Trading {}", coin);
+        // Log in to Binance
+        if (MODE.requiresMarketDataStream()) {
+            String loginFile = (DEVELOPMENT_MODE ? "dev-" : "") + "login.yml";
+            Configuration loginConfig = new Configuration("config\\" + loginFile);
+            API = new BinanceClient(loginConfig);
+        }
 
-        Mode runningMode = null;
-        if (MODE == Mode.Type.BACKTEST) runningMode = new BackTest();
-        else if (MODE == Mode.Type.DOWNLOAD) runningMode = new Downloader();
-        else if (MODE == Mode.Type.SIMULATION) runningMode = new Simulation(coin);
-        else if (MODE == Mode.Type.LIVE) runningMode = new LiveTrading(coin);
+        String coin = null;
+        if (MODE.requiresMarketDataStream()) {
+            coin = CONFIG.getString(MODE.getConfigKey() + ".coin");
+            if (coin == null || coin.isEmpty()) {
+                LOGGER.error("Coin is not set in config.yml - This is the coin the bot will trade.");
+                System.exit(1);
+            }
+
+            LOGGER.info("Trading on {}", coin);
+        }
+
+        Strategy strat = new GridTrading(40);
+        Strategy strat2 = new Strategy("Test", new Test());
+
+        if (MODE == Mode.Type.BACKTEST) currentMode = new BackTest(strat2);
+        else if (MODE == Mode.Type.SIMULATION) currentMode = new Simulation(strat2, coin);
+        else if (MODE == Mode.Type.LIVE) currentMode = new LiveTrading(strat, coin);
         else {
             LOGGER.error("Invalid mode {}", MODE);
             System.exit(1);
         }
 
-        Strategy strat = new GridTrading(runningMode, 0.01);
-        runningMode.setStrategy(strat);
+        // Backtest has to run through file picker GUI first, then starts itself
+        if (MODE != Mode.Type.BACKTEST) currentMode.begin();
     }
 
     private static void useCommandline() {
@@ -100,6 +110,14 @@ public class StratX {
 
     public static Logger getLogger() {
         return LOGGER;
+    }
+
+    public static Configuration getConfig() {
+        return CONFIG;
+    }
+
+    public static Mode getCurrentMode() {
+        return currentMode;
     }
 
     public static void log(String msg, Object... args) {

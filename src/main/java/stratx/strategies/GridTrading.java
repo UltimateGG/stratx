@@ -1,6 +1,5 @@
 package stratx.strategies;
 
-import stratx.modes.Mode;
 import stratx.utils.Candlestick;
 import stratx.utils.Signal;
 
@@ -9,29 +8,35 @@ public class GridTrading extends Strategy {
     private double baseLine = 0;
     private Signal currentSignal = Signal.HOLD;
 
-    public GridTrading(Mode mode, double gridSize) {
-        this(mode, "grid.yml", gridSize);
+    public GridTrading(double gridSize) {
+        this("grid.yml", gridSize);
     }
 
-    public GridTrading(Mode mode, String configFile, double gridSize) {
-        super("Grid Trading", mode, configFile);
+    public GridTrading(String configFile, double gridSize) {
+        super("Grid Trading", configFile);
         this.gridSize = gridSize;
     }
 
     @Override
-    public void update(Candlestick candle) {
+    public void onPriceUpdate(double prevPrice, double newPrice) {
+        if (baseLine == 0) baseLine = newPrice;
+    }
+
+    @Override
+    public void onCandleClose(Candlestick candle) {
         if (baseLine == 0) baseLine = candle.getClose();
 
         int gridJumps = (int) Math.floor((candle.getClose() - baseLine) / gridSize);
+        System.out.println("Grid jumps: " + gridJumps);
         if (gridJumps > 0) {
-            currentSignal = Signal.BUY;
-        } else if (gridJumps < 0) {
             currentSignal = Signal.SELL;
+        } else if (gridJumps < 0) {
+            currentSignal = Signal.BUY;
         } else {
             currentSignal = Signal.HOLD;
         }
 
-        if (Math.abs(gridJumps) >= 5) // Move baseline
+        if (Math.abs(gridJumps) >= 3) // Move baseline
             baseLine = candle.getClose();
     }
 

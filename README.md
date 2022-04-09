@@ -16,12 +16,11 @@ strategies and does not trade. There are a few modes:
 
 - [x] Config file (Stop Loss, Take Profit, etc)
   - [ ] Config setup GUI?
-  - [X] Make indicator settings configurable for plotting
-- [ ] Add more indicators
-  - [ ] MACD
 - [ ] Simulation trading mode
 - [ ] Live trading mode
-- [X] Log files for trades
+- [ ] Not sure if we need candle gui anymore, just so glitchy
+- [ ] Better and detailed logging
+- [ ] Package into executable jar
 - [x] Downloader
 - [x] Strategies (Containers for indicators)
 

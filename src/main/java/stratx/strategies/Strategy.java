@@ -1,7 +1,8 @@
 package stratx.strategies;
 
+import com.binance.api.client.domain.market.CandlestickInterval;
+import stratx.StratX;
 import stratx.indicators.Indicator;
-import stratx.modes.Mode;
 import stratx.utils.*;
 
 import java.util.ArrayList;
@@ -76,25 +77,26 @@ public class Strategy {
     /** Whether to sell all trades on one sell signal, or only close one per signal */
     public boolean SELL_ALL_ON_SIGNAL = false;
 
-    private final Mode mode;
+    /** The candlestick interval to trade on */
+    public CandlestickInterval CANDLESTICK_INTERVAL = CandlestickInterval.FIVE_MINUTES;
+
     private final ArrayList<Indicator> indicators = new ArrayList<>();
     private String configName;
 
 
-    public Strategy(String name, Mode mode, Indicator... indicators) {
-        this(name, mode, name.toLowerCase().replaceAll(" ", "_") + ".yml", indicators);
+    public Strategy(String name, Indicator... indicators) {
+        this(name, name.toLowerCase().replaceAll(" ", "_") + ".yml", indicators);
     }
 
-    public Strategy(String name, Mode mode, String configFile, Indicator... indicators) {
+    public Strategy(String name, String configFile, Indicator... indicators) {
         this.name = name;
-        this.mode = mode;
         this.indicators.addAll(Arrays.asList(indicators));
         this.configName = configFile;
 
-        mode.getLogger().info("Loading strategy settings from " + configFile);
+        StratX.log("Loading strategy settings from " + configFile);
         Configuration config = new Configuration("config/strategies/" + configFile);
         if (!config.exists()) {
-            mode.getLogger().info("Could not find or load config, using built-in settings");
+            StratX.log("Could not find or load config, using built-in settings");
             configName = "(built-ins)";
             return;
         }
@@ -102,21 +104,26 @@ public class Strategy {
         loadSettings(config);
     }
 
+    /** Called every time a price update is received */
+    public void onPriceUpdate(double prevPrice, double newPrice) {}
+
     /** Called every time a candle is closed or every "tick" */
-    public void update(Candlestick candle) {
+    public void onCandleClose(Candlestick candle) {
         for (Indicator indicator : indicators)
             indicator.update(candle);
     }
 
     /** Default implementation, uses the indicators to determine the signal
-     * You may override this for custom strategies */
+     * You may override this for custom strategies
+     * When a candle closes, the mode calls this and if enough balance & not
+     * too many open trades, a trade is placed based on this signal. */
     public Signal getSignal() {
         BuySellSignals buySellSignals = getBuySellSignals();
         int buySignals = buySellSignals.buySignals;
         int sellSignals = buySellSignals.sellSignals;
 
         if (buySignals == 0 && sellSignals == 0) return Signal.HOLD;
-        if (buySignals > sellSignals && !DONT_BUY_IF_SELL_GREATER) return Signal.BUY;
+        if (buySignals > sellSignals || !DONT_BUY_IF_SELL_GREATER) return Signal.BUY;
         else if (sellSignals > buySignals) return Signal.SELL;
         else return Signal.HOLD;
     }
@@ -131,8 +138,8 @@ public class Strategy {
 
         return (((MIN_BUY_SIGNALS == -1 && buySignals >= indicators.size()) || (buySignals >= MIN_BUY_SIGNALS && MIN_BUY_SIGNALS != -1))
                 && (buySignals >= sellSignals && DONT_BUY_IF_SELL_GREATER)
-                && (mode.getAccount().getOpenTrades() < MAX_OPEN_TRADES)
-                && (mode.getAccount().getBalance() > 0)
+                && (StratX.getCurrentMode().getAccount().getOpenTrades() < MAX_OPEN_TRADES)
+                && (StratX.getCurrentMode().getAccount().getBalance() > 0)
                 && amtUSD >= MIN_USD_PER_TRADE
         );
     }
@@ -143,7 +150,7 @@ public class Strategy {
         int sellSignals = getBuySellSignals().sellSignals;
         return (((MIN_SELL_SIGNALS == -1 && sellSignals >= indicators.size()) || (sellSignals >= MIN_SELL_SIGNALS && MIN_SELL_SIGNALS != -1))
                 && (SELL_BASED_ON_INDICATORS)
-                && (mode.getAccount().getOpenTrades() > 0)
+                && (StratX.getCurrentMode().getAccount().getOpenTrades() > 0)
         );
     }
 
@@ -163,7 +170,7 @@ public class Strategy {
     /** Called when a trade is opened to determine how much USD
      * it should be bought for. You may override this for custom implementations. */
     public double getBuyAmount() {
-        double bal = mode.getAccount().getBalance();
+        double bal = StratX.getCurrentMode().getAccount().getBalance();
         double buy = MIN_USD_PER_TRADE;
 
         // Percentage buy
@@ -192,7 +199,14 @@ public class Strategy {
         SELL_BASED_ON_INDICATORS = config.getBoolean("sell.based-on-indicators", SELL_BASED_ON_INDICATORS);
         SELL_ALL_ON_SIGNAL = config.getBoolean("sell.sell-all", SELL_ALL_ON_SIGNAL);
 
-        mode.getLogger().info("Successfully loaded strategy settings");
+        String interval = config.getString("candlestick-interval");
+        if (interval == null) interval = "FIVE_MINUTES";
+
+        try {
+            CANDLESTICK_INTERVAL = CandlestickInterval.valueOf(interval.toUpperCase());
+        } catch (Exception ignored) {}
+
+        StratX.log("Successfully loaded strategy settings");
     }
 
     public void addIndicator(Indicator indicator) {
@@ -230,6 +244,7 @@ public class Strategy {
         sb.append("BUY_AMOUNT_PERCENT: ").append(BUY_AMOUNT_PERCENT).append("\n");
         sb.append("DONT_BUY_IF_SELL_GREATER: ").append(DONT_BUY_IF_SELL_GREATER).append("\n");
         sb.append("SELL_ALL_ON_SIGNAL: ").append(SELL_ALL_ON_SIGNAL).append("\n");
+        sb.append("CANDLESTICK_INTERVAL: ").append(CANDLESTICK_INTERVAL).append("\n");
         
         return sb.toString();
     }

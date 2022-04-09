@@ -1,7 +1,7 @@
 package stratx.indicators;
 
 import org.jfree.data.xy.XYSeries;
-import stratx.modes.Mode;
+import stratx.StratX;
 import stratx.utils.Candlestick;
 import stratx.utils.Configuration;
 import stratx.utils.PriceHistory;
@@ -19,19 +19,18 @@ public class EMA extends Indicator {
     private float LINE_WIDTH = 2.0F;
 
 
-    public EMA(Mode mode, int period) {
-        super(mode);
+    public EMA(int period) {
         this.period = period;
         this.priceHistory = new PriceHistory(period);
-        this.loadSettings(mode.getConfig());
+        this.loadSettings(StratX.getConfig());
     }
 
     @Override
     public void update(Candlestick candle) {
         priceHistory.add(candle);
 
-        if (mode.isShowGUI() && SHOW_ON_CHART && priceHistory.length() >= period) {
-            if (emaLine == null) emaLine = mode.getGUI().getCandlestickChart().addEMALine(COLOR, LINE_WIDTH);
+        if (StratX.getCurrentMode().isShowGUI() && SHOW_ON_CHART && priceHistory.length() >= period) {
+            if (emaLine == null) emaLine = StratX.getCurrentMode().getGUI().getCandlestickChart().addEMALine(COLOR, LINE_WIDTH);
             else emaLine.add(candle.getCloseTime(), getEMA(candle));
         }
     }

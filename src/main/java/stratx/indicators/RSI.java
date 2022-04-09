@@ -5,8 +5,8 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import stratx.StratX;
 import stratx.gui.candlestick.CandlestickChart;
-import stratx.modes.Mode;
 import stratx.utils.*;
 
 import java.awt.*;
@@ -34,13 +34,12 @@ public class RSI extends Indicator {
     private Color MIDDLE_COLOR = new Color(0x6C6C6C);
     private float LINE_WIDTH = 1.5F;
 
-    public RSI(Mode mode, int period, double overbought, double oversold) {
-        super(mode);
+    public RSI(int period, double overbought, double oversold) {
         this.period = period;
         this.overbought = overbought;
         this.oversold = oversold;
         this.priceHistory = new PriceHistory(period);
-        this.loadSettings(mode.getConfig());
+        this.loadSettings();
     }
 
     @Override
@@ -48,8 +47,8 @@ public class RSI extends Indicator {
         priceHistory.add(candle);
 
         if (SHOW_ON_CHART && priceHistory.length() >= period) {
-            if (rsiLine == null && mode.isShowGUI()) { // Create RSI overlay
-                CandlestickChart renderer = mode.getGUI().getCandlestickChart();
+            if (rsiLine == null && StratX.getCurrentMode().isShowGUI()) { // Create RSI overlay
+                CandlestickChart renderer = StratX.getCurrentMode().getGUI().getCandlestickChart();
                 XYLineAndShapeRenderer emaRenderer = new XYLineAndShapeRenderer(true, false);
                 emaRenderer.setSeriesPaint(0, OVERBOUGHT_COLOR);
                 emaRenderer.setSeriesStroke(0, new BasicStroke(1.0F));
@@ -96,7 +95,7 @@ public class RSI extends Indicator {
 
         rsiSubplot.setDataset(num, dataset);
         rsiSubplot.setRenderer(num, renderer);
-        mode.getGUI().getCandlestickChart().addPlot(rsiSubplot);
+        StratX.getCurrentMode().getGUI().getCandlestickChart().addPlot(rsiSubplot);
         return series;
     }
 
@@ -124,7 +123,8 @@ public class RSI extends Indicator {
         return MathUtils.clampDouble(100 - (100 / (1 + rs)), 0.0D, 100.0D);
     }
 
-    public void loadSettings(Configuration config) {
+    public void loadSettings() {
+        Configuration config = StratX.getConfig();
         SHOW_ON_CHART = config.getBoolean("indicators.rsi.show-on-chart", SHOW_ON_CHART);
         SHOW_MID_LINE = config.getBoolean("indicators.rsi.midline", SHOW_MID_LINE);
         COLOR = config.getColor("indicators.rsi.color", COLOR);

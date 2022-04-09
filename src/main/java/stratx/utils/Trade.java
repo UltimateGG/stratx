@@ -18,6 +18,8 @@ public class Trade {
     private long exitTime;
     private String closeReason;
 
+
+    /** Opens trade */
     public Trade(Mode mode, double usd) {
         if (usd <= 0.0) throw new IllegalArgumentException("USD must be positive to enter a trade");
         this.mode = mode;
@@ -30,8 +32,9 @@ public class Trade {
         if (mode.shouldShowSignals())
             mode.getGUI().getCandlestickChart().addSignalIndicatorOn(entryCandle.getID(), Signal.BUY);
 
+        if (mode.getType() != Mode.Type.BACKTEST) mode.getLogger().info("[BUY] " + this);
         StratX.trace("[BUY] {} {} @ ${}/ea for ${}",
-                MathUtils.COMMAS_2F.format(this.coinAmount),
+                MathUtils.round(this.coinAmount, 6),
                 mode.getCoin(),
                 MathUtils.round(entryCandle.getClose(), 4),
                 MathUtils.COMMAS_2F.format(usd));
@@ -83,10 +86,10 @@ public class Trade {
         if (mode.shouldShowSignals())
             mode.getGUI().getCandlestickChart().addSignalIndicatorOn(exitCandle.getID(), Signal.SELL);
 
-        mode.getLogger().info(this.toString());
+        mode.getLogger().info("[SELL] " + this);
         StratX.trace("[SELL] ({}) {} {} @ ${}/ea for profit of ${} ({}%)",
                 reason,
-                MathUtils.COMMAS_2F.format(this.coinAmount),
+                MathUtils.round(this.coinAmount, 6),
                 mode.getCoin(),
                 MathUtils.round(exitCandle.getClose(), 4),
                 MathUtils.COMMAS_2F.format(getProfit()),
@@ -115,11 +118,18 @@ public class Trade {
 
     @Override
     public String toString() {
-        return (isOpen ? "[OPEN] " : "")
-                + (getProfit() >= 0 ? Utils.ANSI_GREEN + "+" : Utils.ANSI_RED + "-")
+        if (isOpen) {
+            return String.format("%s %s ($%s USD) @ $%s/ea",
+                    MathUtils.round(coinAmount, 6),
+                    mode.getCoin(),
+                    MathUtils.round(entryAmountUSD, 2),
+                    MathUtils.round(entryCandle.getClose(), 4));
+        }
+
+        return (getProfit() >= 0 ? Utils.ANSI_GREEN + "+" : Utils.ANSI_RED + "-")
                 + " $" + Math.abs(MathUtils.roundTwoDec(getProfit())) + " USD "
                 + MathUtils.formatPercent(getProfitPercent()) + Utils.ANSI_RESET
-                + (" ($" + MathUtils.COMMAS_2F.format(entryAmountUSD) + ")")
+                + " ($" + MathUtils.COMMAS_2F.format(entryAmountUSD) + ")"
                 + (closeReason != null ? " (" + closeReason + ")" : "");
     }
 
