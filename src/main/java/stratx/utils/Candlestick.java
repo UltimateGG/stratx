@@ -32,10 +32,10 @@ public class Candlestick {
             this.low = low;
             this.close = close;
         } else {
-            this.open = (previous.getOpen() + previous.getClose()) / 2;
+            this.open = (previous.getOpen() + previous.getClose()) / 2.0;
             this.high = Math.max(high, Math.max(open, close));
             this.low = Math.min(low, Math.min(open, close));
-            this.close = (open + high + low + close) / 4;
+            this.close = (open + high + low + close) / 4.0;
         }
 
         this.volume = volume;

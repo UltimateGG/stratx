@@ -6,16 +6,34 @@ import stratx.modes.Mode;
 public class Trade {
     private static int MAX_ID = 0;
     private final int ID = MAX_ID++;
+
     private final Mode mode;
+
+    /** If the trade is open or not */
     private boolean isOpen;
-    private final Candlestick entryCandle;
+
+    /** The USD price of the trade @ entry */
+    private final double entryPrice;
+
+    /** The epoch time of entry */
     private final long entryTime;
-    private final double coinAmount;
-    private final double entryAmountUSD; // initial USD amount purchased
+
+    /** The coin amount purchased (Ex 0.1 btc) */
+    private final double amount;
+
+    /** The USD worth at entry */
+    private final double amountUSD;
+
     private boolean trailingStopArmed = false;
     private double lastProfitPercent = 0;
-    private Candlestick exitCandle;
+
+    /** The USD price of the trade @ exit */
+    private double exitPrice;
+
+    /** The epoch time of exit */
     private long exitTime;
+
+    /** The reason the trade was closed */
     private String closeReason;
 
 
@@ -23,20 +41,20 @@ public class Trade {
     public Trade(Mode mode, double usd) {
         if (usd <= 0.0) throw new IllegalArgumentException("USD must be positive to enter a trade");
         this.mode = mode;
-        this.entryCandle = mode.getCurrentCandle();
-        this.entryTime = entryCandle.getCloseTime();
-        this.entryAmountUSD = usd;
-        this.coinAmount = usd / mode.getCurrentPrice();
+        this.entryPrice = mode.getCurrentPrice();
+        this.entryTime = mode.getCurrentTime();
+        this.amountUSD = usd;
+        this.amount = usd / entryPrice;
         this.isOpen = true;
 
         if (mode.shouldShowSignals())
-            mode.getGUI().getCandlestickChart().addSignalIndicatorOn(entryCandle.getID(), Signal.BUY);
+            mode.getGUI().getCandlestickChart().addSignalIndicatorOn(mode.getCurrentCandle().getID(), Signal.BUY);
 
         if (mode.getType() != Mode.Type.BACKTEST) mode.getLogger().info("[BUY] " + this);
         StratX.trace("[BUY] {} {} @ ${}/ea for ${}",
-                MathUtils.round(this.coinAmount, 6),
+                MathUtils.round(this.amount, 8),
                 mode.getCoin(),
-                MathUtils.round(entryCandle.getClose(), 4),
+                MathUtils.round(mode.getCurrentPrice(), 8),
                 MathUtils.COMMAS_2F.format(usd));
     }
 
@@ -44,16 +62,16 @@ public class Trade {
         return isOpen;
     }
 
-    public Candlestick getEntryCandle() {
-        return entryCandle;
+    public double getEntryPrice() {
+        return entryPrice;
     }
 
-    public double getCoinAmount() {
-        return coinAmount;
+    public double getAmount() {
+        return amount;
     }
 
-    public double getEntryAmountUSD() {
-        return entryAmountUSD;
+    public double getAmountUSD() {
+        return amountUSD;
     }
 
     public boolean isTrailingStopArmed() {
@@ -72,44 +90,44 @@ public class Trade {
         this.lastProfitPercent = percent;
     }
 
-    public Candlestick getExitCandle() {
-        return exitCandle;
+    public double getExitPrice() {
+        return exitPrice;
     }
 
     public void close(String reason) {
         if (!isOpen) throw new IllegalStateException("Trade is already closed");
         this.isOpen = false;
-        this.exitCandle = mode.getCurrentCandle();
-        this.exitTime = exitCandle.getCloseTime();
+        this.exitPrice = mode.getCurrentPrice();
+        this.exitTime = mode.getCurrentTime();
         this.closeReason = reason;
 
         if (mode.shouldShowSignals())
-            mode.getGUI().getCandlestickChart().addSignalIndicatorOn(exitCandle.getID(), Signal.SELL);
+            mode.getGUI().getCandlestickChart().addSignalIndicatorOn(mode.getCurrentCandle().getID(), Signal.SELL);
 
         mode.getLogger().info("[SELL] " + this);
         StratX.trace("[SELL] ({}) {} {} @ ${}/ea for profit of ${} ({}%)",
                 reason,
-                MathUtils.round(this.coinAmount, 6),
+                MathUtils.round(this.amount, 8),
                 mode.getCoin(),
-                MathUtils.round(exitCandle.getClose(), 4),
+                MathUtils.round(mode.getCurrentPrice(), 8),
                 MathUtils.COMMAS_2F.format(getProfit()),
                 MathUtils.COMMAS_2F.format(getProfitPercent()));
     }
 
     /** Returns the current profit in USD */
     public double getProfit() {
-        return getCurrentUSDWorth() - entryAmountUSD;
+        return getCurrentUSDWorth() - amountUSD;
     }
 
     /** Returns the current profit % */
     public double getProfitPercent() {
-        return (getProfit() / entryAmountUSD) * 100.0D;
+        return (getProfit() / amountUSD) * 100.0D;
     }
 
     /** Returns the current value of this trade in USD */
     public double getCurrentUSDWorth() {
-        double priceToUse = isOpen ? mode.getCurrentPrice() : exitCandle.getClose();
-        return priceToUse * coinAmount;
+        double priceToUse = isOpen ? mode.getCurrentPrice() : exitPrice;
+        return priceToUse * amount;
     }
 
     public long getHoldingTime() {
@@ -120,16 +138,16 @@ public class Trade {
     public String toString() {
         if (isOpen) {
             return String.format("%s %s ($%s USD) @ $%s/ea",
-                    MathUtils.round(coinAmount, 6),
+                    MathUtils.round(amount, 6),
                     mode.getCoin(),
-                    MathUtils.round(entryAmountUSD, 2),
-                    MathUtils.round(entryCandle.getClose(), 4));
+                    MathUtils.round(amountUSD, 2),
+                    MathUtils.round(exitPrice, 6));
         }
 
         return (getProfit() >= 0 ? Utils.ANSI_GREEN + "+" : Utils.ANSI_RED + "-")
                 + " $" + Math.abs(MathUtils.roundTwoDec(getProfit())) + " USD "
                 + MathUtils.formatPercent(getProfitPercent()) + Utils.ANSI_RESET
-                + " ($" + MathUtils.COMMAS_2F.format(entryAmountUSD) + ")"
+                + " ($" + MathUtils.COMMAS_2F.format(amountUSD) + ")"
                 + (closeReason != null ? " (" + closeReason + ")" : "");
     }
 

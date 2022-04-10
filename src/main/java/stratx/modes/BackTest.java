@@ -30,16 +30,6 @@ public class BackTest extends Mode {
         this.loadData(this.PRICE_DATA); // Load the price data in
     }
 
-    @Override
-    protected void start() {
-        try {
-            this.runTest();
-        } catch (Exception e) {
-            StratX.error("Caught exception during backtest: ", e);
-            System.exit(1);
-        }
-    }
-
     private void loadData(String file) {
         long start = System.currentTimeMillis();
         data = Loader.loadData(file);
@@ -50,6 +40,16 @@ public class BackTest extends Mode {
         }
 
         LOGGER.info("Loader has successfully loaded {} data points in {}ms", MathUtils.COMMAS.format(data.size()), System.currentTimeMillis() - start);
+    }
+
+    @Override
+    protected void start() {
+        try {
+            this.runTest();
+        } catch (Exception e) {
+            StratX.error("Caught exception during backtest: ", e);
+            System.exit(1);
+        }
     }
 
     private void runTest() {
@@ -86,7 +86,7 @@ public class BackTest extends Mode {
 
     @Override
     protected void onPriceUpdate(double prevPrice, double newPrice) {
-        //this.checkTakeProfitStopLoss();
+        this.checkTakeProfitStopLoss();
     }
 
     @Override
@@ -97,7 +97,7 @@ public class BackTest extends Mode {
     }
 
     private void showFilePickerGui() {
-        Gui gui = new Gui("StratX Backtest", 350, 170, false);
+        Gui gui = new Gui("StratX Backtest", 350, 195, false);
         ArrayList<File> files = getValidFiles();
         String[] fileNames = new String[files.size()];
 
@@ -105,6 +105,7 @@ public class BackTest extends Mode {
 
         gui.addPanel();
         JComboBox<?> fileSelect = gui.addDropdown("Select Backtest File", new JComboBox<>(fileNames), 0);
+        gui.addLabel("Strategy: " + this.strategy.name, 10);
         gui.addPaddingY(10);
         gui.addButton("Run", GuiTheme.INFO_COLOR, GuiTheme.TEXT_COLOR, null, 10).addActionListener(e -> {
             File file = files.get(fileSelect.getSelectedIndex());

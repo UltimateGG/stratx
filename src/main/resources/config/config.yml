@@ -19,7 +19,7 @@ live-trading:
 
 indicators:
     ema:
-        show-on-chart: true
+        show-on-chart: false
         color: 0x0F74E7
         line-width: 2.0
     rsi:

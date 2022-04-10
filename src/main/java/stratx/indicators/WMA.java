@@ -11,7 +11,6 @@ import java.awt.*;
 
 public class WMA extends Indicator {
     private final int period;
-    private final PriceHistory priceHistory;
     private XYSeries wmaLine;
 
     private boolean SHOW_ON_CHART = true;
@@ -37,11 +36,11 @@ public class WMA extends Indicator {
 
     @Override
     public Signal getSignal() {
-        Candlestick last = priceHistory.getLatest();
+        double current = StratX.getCurrentMode().getCurrentPrice();
         double wma = getWMA();
         if (wma == -1) return Signal.HOLD;
-        if (wma > last.getClose()) return Signal.SELL;
-        if (wma < last.getClose()) return Signal.BUY;
+        if (wma > current) return Signal.SELL;
+        if (wma < current) return Signal.BUY;
         return Signal.HOLD;
     }
 

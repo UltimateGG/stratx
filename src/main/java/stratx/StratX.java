@@ -4,12 +4,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stratx.gui.Gui;
 import stratx.gui.GuiTheme;
+import stratx.indicators.EMA;
 import stratx.indicators.Test;
 import stratx.modes.*;
 import stratx.strategies.GridTrading;
 import stratx.strategies.Strategy;
+import stratx.utils.BinanceClient;
 import stratx.utils.Configuration;
-import stratx.utils.binance.BinanceClient;
 
 import javax.swing.*;
 import java.awt.*;
@@ -72,9 +73,10 @@ public class StratX {
 
         Strategy strat = new GridTrading(40);
         Strategy strat2 = new Strategy("Test", new Test());
+        Strategy emaStrat = new Strategy("EMA", "test.yml", new EMA(9));
 
-        if (MODE == Mode.Type.BACKTEST) currentMode = new BackTest(strat2);
-        else if (MODE == Mode.Type.SIMULATION) currentMode = new Simulation(strat2, coin);
+        if (MODE == Mode.Type.BACKTEST) currentMode = new BackTest(emaStrat);
+        else if (MODE == Mode.Type.SIMULATION) currentMode = new Simulation(emaStrat, coin);
         else if (MODE == Mode.Type.LIVE) currentMode = new LiveTrading(strat, coin);
         else {
             LOGGER.error("Invalid mode {}", MODE);

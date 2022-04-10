@@ -1,11 +1,10 @@
-package stratx.utils.binance;
+package stratx.utils;
 
 import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.api.client.config.BinanceApiConfig;
 import stratx.StratX;
-import stratx.utils.Configuration;
 
 public class BinanceClient {
     private BinanceApiClientFactory factory;

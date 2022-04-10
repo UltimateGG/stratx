@@ -1,14 +1,14 @@
 max-open-trades: 1
 close-open-trades-on-exit: true
-candlestick-interval: ONE_MINUTE
+candlestick-interval: FIVE_MINUTES
 
 take-profit:
     enabled: true
-    percent: 10.0
+    percent: 2.5
 
 stop-loss:
     enabled: true
-    percent: 2.0
+    percent: 1.0
 
 trailing-stop:
     enabled: true

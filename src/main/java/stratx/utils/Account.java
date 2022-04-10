@@ -25,7 +25,7 @@ public class Account {
 
     public void openTrade(Trade trade) {
         trades.add(trade);
-        balance -= trade.getEntryAmountUSD();
+        balance -= trade.getAmountUSD();
         openTrades++;
         StratX.trace("New Balance: ${} ({} open trades)\n", MathUtils.COMMAS_2F.format(balance), openTrades);
     }

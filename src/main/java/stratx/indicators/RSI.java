@@ -24,8 +24,6 @@ public class RSI extends Indicator {
     private XYSeries midLine;
     private XYSeries rsiLine;
 
-    private final PriceHistory priceHistory;
-
     private boolean SHOW_ON_CHART = true;
     private boolean SHOW_MID_LINE = true;
     private Color COLOR = new Color(0x7E44F1);

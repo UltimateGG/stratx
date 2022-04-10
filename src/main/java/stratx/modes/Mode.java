@@ -11,6 +11,7 @@ import stratx.utils.*;
 
 import java.awt.*;
 import java.io.Closeable;
+import java.util.List;
 
 /** Shell/base class for different modes. Live & Simulation mode need
  * a market data stream of candlesticks. Backtest simulates this stream.
@@ -81,17 +82,16 @@ public abstract class Mode {
                 if (candle.isFinal()) {
                     onCandleClose(candle);
                     previousCandle = candle;
+                    return;
                 }
 
                 // A candle updated, but didn't close, fire events for stop loss/take profit
-                if (!candle.isFinal()) {
-                    onPriceUpdate(candle.getClose(), Double.parseDouble(event.getClose()));
+                onPriceUpdate(candle.getClose(), Double.parseDouble(event.getClose()));
 
-                    candle.setHigh(Double.parseDouble(event.getHigh()));
-                    candle.setLow(Double.parseDouble(event.getLow()));
-                    candle.setClose(Double.parseDouble(event.getClose()));
-                    candle.setVolume((long) Double.parseDouble(event.getVolume()));
-                }
+                candle.setHigh(Double.parseDouble(event.getHigh()));
+                candle.setLow(Double.parseDouble(event.getLow()));
+                candle.setClose(Double.parseDouble(event.getClose()));
+                candle.setVolume((long) Double.parseDouble(event.getVolume()));
             }
 
             @Override
@@ -99,6 +99,27 @@ public abstract class Mode {
                 LOGGER.error("Error during candlestick stream", cause);
             }
         });
+
+        // Populate price history
+        List<com.binance.api.client.domain.market.Candlestick> bars = StratX.API.get().getCandlestickBars(COIN, strategy.CANDLESTICK_INTERVAL);
+
+        for (com.binance.api.client.domain.market.Candlestick bar : bars) {
+            Candlestick candle = new Candlestick(
+                    bar.getCloseTime(),
+                    Double.parseDouble(bar.getOpen()),
+                    Double.parseDouble(bar.getHigh()),
+                    Double.parseDouble(bar.getLow()),
+                    Double.parseDouble(bar.getClose()),
+                    (long) Double.parseDouble(bar.getVolume()),
+                    previousCandle, true);
+
+            priceHistory.add(candle);
+            this.strategy.getIndicators().forEach(indicator -> {
+                if (indicator.getPriceHistory() != null)
+                    indicator.getPriceHistory().add(candle);
+            });
+            previousCandle = candle;
+        }
     }
 
     /** Called to begin running the mode */
@@ -210,6 +231,11 @@ public abstract class Mode {
     public double getCurrentPrice() {
         if (currentCandle == null) return 0;
         return currentCandle.getClose();
+    }
+
+    public long getCurrentTime() {
+        if (currentCandle == null) return 0;
+        return currentCandle.getCloseTime();
     }
 
     public Account getAccount() {

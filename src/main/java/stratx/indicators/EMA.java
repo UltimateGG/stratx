@@ -11,7 +11,6 @@ import java.awt.*;
 
 public class EMA extends Indicator {
     private final int period;
-    private final PriceHistory priceHistory;
     private XYSeries emaLine;
 
     private boolean SHOW_ON_CHART = true;
@@ -31,25 +30,26 @@ public class EMA extends Indicator {
 
         if (StratX.getCurrentMode().isShowGUI() && SHOW_ON_CHART && priceHistory.length() >= period) {
             if (emaLine == null) emaLine = StratX.getCurrentMode().getGUI().getCandlestickChart().addEMALine(COLOR, LINE_WIDTH);
-            else emaLine.add(candle.getCloseTime(), getEMA(candle));
+            else emaLine.add(candle.getCloseTime(), getEMA(candle.getClose()));
         }
     }
 
     @Override
     public Signal getSignal() {
-        Candlestick last = priceHistory.getLatest();
-        double ema = getEMA(last);
+        double current = StratX.getCurrentMode().getCurrentPrice();
+        double ema = getEMA(current);
+
         if (ema == -1) return Signal.HOLD;
-        if (ema > last.getClose()) return Signal.SELL;
-        if (ema < last.getClose()) return Signal.BUY;
+        if (current > ema) return Signal.BUY;
+        if (current < ema) return Signal.SELL;
         return Signal.HOLD;
     }
 
-    private double getEMA(Candlestick current) {
+    private double getEMA(double current) {
         if (priceHistory.length() < period) return -1;
 
         double k = 2.0 / (period + 1.0D);
-        double ema = current.getClose();
+        double ema = current;
         for (Candlestick candle : priceHistory.get())
             ema += k * (candle.getClose() - ema);
         return ema;
