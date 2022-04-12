@@ -14,29 +14,26 @@ public class Candlestick {
     private final Candlestick previous;
 
 
-    public Candlestick(long closeTime, double open, double high, double low, double close, long volume, Candlestick previous, boolean isFinal) throws RuntimeException {
-        this(closeTime, open, high, low, close, volume, previous);
-        this.isFinal = isFinal;
+    public Candlestick(long closeTime, double open, double high, double low, double close, long volume, Candlestick previous) throws RuntimeException {
+        this(closeTime, open, high, low, close, volume, previous, true);
     }
 
-    public Candlestick(long closeTime, double open, double high, double low, double close, long volume, Candlestick previous) throws RuntimeException {
+    public Candlestick(long closeTime, double open, double high, double low, double close, long volume, Candlestick previous, boolean isFinal) throws RuntimeException {
         if (closeTime < 0 || open < 0 || high < 0 || low < 0 || close < 0 || volume < 0)
             throw new RuntimeException("Invalid candlestick values (Must be positive)");
 
         this.closeTime = closeTime;
-        this.isFinal = true;
+        this.isFinal = isFinal;
 
-        if (previous == null) {
-            this.open = open;
-            this.high = high;
-            this.low = low;
-            this.close = close;
-        } else {
-            this.open = (previous.getOpen() + previous.getClose()) / 2.0;
-            this.high = Math.max(high, Math.max(open, close));
-            this.low = Math.min(low, Math.min(open, close));
-            this.close = (open + high + low + close) / 4.0;
-        }
+        // @TODO Why did I ever do heikin ashi
+//        this.open = previous == null ? open : (previous.getOpen() + previous.getClose()) / 2.0;
+//        this.high = Math.max(high, Math.max(open, close));
+//        this.low = Math.min(low, Math.min(open, close));
+//        this.close = (open + high + low + close) / 4.0;
+        this.open = open;
+        this.high = high;
+        this.low = low;
+        this.close = close;
 
         this.volume = volume;
         this.previous = previous;
@@ -47,6 +44,7 @@ public class Candlestick {
     }
 
     public void setFinal(boolean isFinal) {
+        if (this.isFinal) return;
         this.isFinal = isFinal;
     }
 
@@ -122,13 +120,13 @@ public class Candlestick {
         if (!(obj instanceof Candlestick)) return false;
 
         Candlestick other = (Candlestick) obj;
-        return this.ID == other.getID() && this.closeTime == other.closeTime && this.open == other.open && this.high == other.high && this.low == other.low && this.close == other.close && this.volume == other.volume;
+        return this.ID == other.getID() && this.closeTime == other.closeTime && this.open == other.open && this.high == other.high && this.low == other.low && this.close == other.close && this.volume == other.volume && this.isFinal == other.isFinal;
     }
 
     @Override
     public Candlestick clone() throws CloneNotSupportedException {
         super.clone();
-        Candlestick clone = new Candlestick(closeTime, open, high, low, close, volume, this.previous);
+        Candlestick clone = new Candlestick(closeTime, open, high, low, close, volume, this.previous, isFinal);
         clone.setID(ID); // Persist id
         return clone;
     }

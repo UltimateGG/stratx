@@ -44,15 +44,6 @@ public class BackTest extends Mode {
 
     @Override
     protected void start() {
-        try {
-            this.runTest();
-        } catch (Exception e) {
-            StratX.error("Caught exception during backtest: ", e);
-            System.exit(1);
-        }
-    }
-
-    private void runTest() {
         if (SHOW_GUI) {
             GUI = new Gui("StratX Backtest", 1800, 900, false);
             GUI.setIcon("/icon.png");

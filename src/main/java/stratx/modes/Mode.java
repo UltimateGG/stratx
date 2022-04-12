@@ -38,8 +38,9 @@ public abstract class Mode {
         this.SHOW_GUI = !GraphicsEnvironment.isHeadless() && StratX.getConfig().getBoolean(type.getConfigKey() + ".show-gui", true);
         this.LOGGER = LogManager.getLogger(type.toString());
 
-        // @TODO If live, use balance at instantiation.
-        this.STARTING_BALANCE = StratX.getConfig().getDouble((TYPE == Type.SIMULATION ? "simulation" : "backtest") + ".starting-balance", 100.0);
+        this.STARTING_BALANCE = TYPE == Type.LIVE ?
+                Double.parseDouble(StratX.API.get().getAccount().getAssetBalance("USDT").getFree()) :
+                StratX.getConfig().getDouble((TYPE == Type.SIMULATION ? "simulation" : "backtest") + ".starting-balance", 100.0);
         this.ACCOUNT = new Account(STARTING_BALANCE);
     }
 
@@ -57,14 +58,14 @@ public abstract class Mode {
 
     private void setupMarketDataStream() {
         priceHistory = new PriceHistory(200);
+        final double[] prevPrice = {0};
 
         LOGGER.info("Trading on " + strategy.CANDLESTICK_INTERVAL + " interval");
         StratX.trace("Trading on " + strategy.CANDLESTICK_INTERVAL + " interval");
         candlestickEventListener = StratX.API.getWebsocket().onCandlestickEvent(COIN, strategy.CANDLESTICK_INTERVAL, new BinanceApiCallback<CandlestickEvent>() {
             @Override
             public void onResponse(CandlestickEvent event) {
-                Candlestick fromHistory = priceHistory.getByTime(event.getCloseTime());
-                Candlestick candle = fromHistory != null ? fromHistory : new Candlestick(
+                Candlestick candle = new Candlestick(
                         event.getCloseTime(),
                         Double.parseDouble(event.getOpen()),
                         Double.parseDouble(event.getHigh()),
@@ -74,24 +75,19 @@ public abstract class Mode {
                         previousCandle, false
                 );
 
-                if (candle.isFinal()) return;
                 candle.setFinal(event.getBarFinal());
                 currentCandle = candle;
-                if (!priceHistory.get().contains(candle)) priceHistory.add(candle);
 
                 if (candle.isFinal()) {
                     onCandleClose(candle);
+                    priceHistory.add(candle);
                     previousCandle = candle;
                     return;
                 }
 
                 // A candle updated, but didn't close, fire events for stop loss/take profit
-                onPriceUpdate(candle.getClose(), Double.parseDouble(event.getClose()));
-
-                candle.setHigh(Double.parseDouble(event.getHigh()));
-                candle.setLow(Double.parseDouble(event.getLow()));
-                candle.setClose(Double.parseDouble(event.getClose()));
-                candle.setVolume((long) Double.parseDouble(event.getVolume()));
+                onPriceUpdate(prevPrice[0], Double.parseDouble(event.getClose()));
+                prevPrice[0] = Double.parseDouble(event.getClose());
             }
 
             @Override
@@ -120,6 +116,7 @@ public abstract class Mode {
             });
             previousCandle = candle;
         }
+        bars.clear();
     }
 
     /** Called to begin running the mode */
@@ -229,7 +226,7 @@ public abstract class Mode {
     }
 
     public double getCurrentPrice() {
-        if (currentCandle == null) return 0;
+        if (currentCandle == null) return 0.0;
         return currentCandle.getClose();
     }
 

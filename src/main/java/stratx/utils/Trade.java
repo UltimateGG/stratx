@@ -141,7 +141,7 @@ public class Trade {
                     MathUtils.round(amount, 6),
                     mode.getCoin(),
                     MathUtils.round(amountUSD, 2),
-                    MathUtils.round(exitPrice, 6));
+                    MathUtils.round(entryPrice, 6));
         }
 
         return (getProfit() >= 0 ? Utils.ANSI_GREEN + "+" : Utils.ANSI_RED + "-")

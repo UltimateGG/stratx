@@ -4,8 +4,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stratx.gui.Gui;
 import stratx.gui.GuiTheme;
-import stratx.indicators.EMA;
 import stratx.indicators.Test;
+import stratx.indicators.WMA;
 import stratx.modes.*;
 import stratx.strategies.GridTrading;
 import stratx.strategies.Strategy;
@@ -26,7 +26,7 @@ public class StratX {
 
     private static final org.apache.logging.log4j.Logger LOGGER = LogManager.getLogger("StratX");
     public static final String DATA_FOLDER = System.getProperty("user.dir")
-            + (DEVELOPMENT_MODE ? "\\src\\main\\resources\\" : "\\stratx\\");
+            + (DEVELOPMENT_MODE ? "\\src\\main\\resources\\" : "\\");
     public static Mode.Type MODE = Mode.Type.SIMULATION;
     public static BinanceClient API = null;
     private static final Configuration CONFIG = new Configuration("config\\config.yml");
@@ -73,7 +73,7 @@ public class StratX {
 
         Strategy strat = new GridTrading(40);
         Strategy strat2 = new Strategy("Test", new Test());
-        Strategy emaStrat = new Strategy("EMA", "test.yml", new EMA(9));
+        Strategy emaStrat = new Strategy("WMA", "test.yml", new WMA(60));
 
         if (MODE == Mode.Type.BACKTEST) currentMode = new BackTest(emaStrat);
         else if (MODE == Mode.Type.SIMULATION) currentMode = new Simulation(emaStrat, coin);
@@ -83,8 +83,11 @@ public class StratX {
             System.exit(1);
         }
 
-        // Backtest has to run through file picker GUI first, then starts itself
-        if (MODE != Mode.Type.BACKTEST) currentMode.begin();
+        try { // Backtest has to run through file picker GUI first, then starts itself
+            if (MODE != Mode.Type.BACKTEST) currentMode.begin();
+        } catch (Exception e) {
+            LOGGER.error("Error while running mode {}", MODE, e);
+        }
     }
 
     private static void useCommandline() {

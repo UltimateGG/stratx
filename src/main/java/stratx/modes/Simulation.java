@@ -3,7 +3,6 @@ package stratx.modes;
 import stratx.strategies.Strategy;
 import stratx.utils.Candlestick;
 
-// @TODO Logging/trace log
 public class Simulation extends Mode {
     public Simulation(Strategy strategy, String coin) {
         super(Type.SIMULATION, strategy, coin);
@@ -21,7 +20,7 @@ public class Simulation extends Mode {
 
     @Override
     protected void onCandleClose(Candlestick candle) {
-        System.out.println("Candle Close: " + candle.getClose());
+        System.out.println("Candle Close: " + candle);
         this.checkTakeProfitStopLoss();
         this.checkBuySellSignals(candle);
         System.out.println("Bal: $" +ACCOUNT.getBalance());

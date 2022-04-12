@@ -11,16 +11,20 @@ backtest:
 simulation:
     show-gui: true
     starting-balance: 100.0
-    coin: BTCUSD
+    coin: BTCUSDT
 
 live-trading:
     show-gui: true
-    coin: BTCUSD
+    coin: BTCUSDT
 
 indicators:
     ema:
-        show-on-chart: false
+        show-on-chart: true
         color: 0x0F74E7
+        line-width: 2.0
+    wma:
+        show-on-chart: true
+        color: 0x8620E5
         line-width: 2.0
     rsi:
         show-on-chart: true

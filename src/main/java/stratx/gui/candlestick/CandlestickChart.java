@@ -129,9 +129,10 @@ public class CandlestickChart extends JPanel {
         emaRenderer.setSeriesPaint(0, color);
         emaRenderer.setSeriesStroke(0, new BasicStroke(width));
 
+        this.lockSeries(emaSeries);
         candlestickSubplot.setDataset(num, emaDataset);
         candlestickSubplot.setRenderer(num, emaRenderer);
-        this.addPlot(candlestickSubplot);
+
         return emaSeries;
     }
 
@@ -162,18 +163,23 @@ public class CandlestickChart extends JPanel {
         this.update();
     }
 
-    public void addPlot(XYPlot plot) {
-        mainPlot.add(plot, 2);
+    public void addPlot(XYPlot plot, boolean add) {
+        if (add) mainPlot.add(plot, 2);
 
         for (int i = 0; i < plot.getDatasetCount(); i++) {
             XYSeriesCollection dataset = (XYSeriesCollection) plot.getDataset(i);
+            if (dataset == null) continue;
 
             for (int j = 0; j < dataset.getSeriesCount(); j++) {
                 XYSeries series = dataset.getSeries(j);
-                series.setNotify(false);
-                EVENT_LOCK.add(series);
+                this.lockSeries(series);
             }
         }
+    }
+
+    public void lockSeries(XYSeries series) {
+        series.setNotify(false);
+        EVENT_LOCK.add(series);
     }
 
     public void update() {
@@ -184,5 +190,6 @@ public class CandlestickChart extends JPanel {
 
         ohlcSeries.setNotify(true);
         ohlcSeries.setNotify(false);
+        dateAxis.configure();
     }
 }

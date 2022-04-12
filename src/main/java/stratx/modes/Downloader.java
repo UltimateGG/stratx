@@ -170,7 +170,7 @@ public class Downloader {
         }
 
         downloading = false;
-        downloadButton.setEnabled(true);
+        if (downloadButton != null) downloadButton.setEnabled(true);
         log("Download complete!");
     }
 

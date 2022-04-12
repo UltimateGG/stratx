@@ -41,9 +41,9 @@ public class MathUtils {
 		return Math.max(min, Math.min(value, max));
 	}
 
-	public static double round(double value, int places) {
+	public static String round(double value, int places) {
 		BigDecimal bd = new BigDecimal(value);
 		bd = bd.setScale(places, RoundingMode.HALF_UP);
-		return bd.doubleValue();
+		return bd.toString();
 	}
 }

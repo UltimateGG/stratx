@@ -45,13 +45,17 @@ public class EMA extends Indicator {
         return Signal.HOLD;
     }
 
-    private double getEMA(double current) {
+    private double getEMA(double currentPrice) {
         if (priceHistory.length() < period) return -1;
 
         double k = 2.0 / (period + 1.0D);
-        double ema = current;
-        for (Candlestick candle : priceHistory.get())
-            ema += k * (candle.getClose() - ema);
+        double ema = currentPrice;
+        double prevEMA = priceHistory.get(period - 1).getClose();
+        for (Candlestick candle : priceHistory.get()) {
+            ema = k * (candle.getClose() - prevEMA) + prevEMA;
+            prevEMA = ema;
+        }
+
         return ema;
     }
 

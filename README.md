@@ -23,7 +23,7 @@ There are a few modes:
 - [ ] Fix backtesting mode (Seems way off compared to simulation)
 - [ ] Not sure if we need candle gui anymore, just so glitchy
 - [ ] Better and detailed logging
-- [ ] Package into executable jar
+- [X] Package into executable jar
 - [x] Downloader
 - [x] Strategies (Containers for indicators)
 
