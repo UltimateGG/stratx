@@ -11,6 +11,7 @@ import stratx.strategies.GridTrading;
 import stratx.strategies.Strategy;
 import stratx.utils.BinanceClient;
 import stratx.utils.Configuration;
+import stratx.utils.Utils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -29,6 +30,7 @@ public class StratX {
             + (DEVELOPMENT_MODE ? "\\src\\main\\resources\\" : "\\");
     public static Mode.Type MODE = Mode.Type.SIMULATION;
     public static BinanceClient API = null;
+    static { Utils.trySetup(); }
     private static final Configuration CONFIG = new Configuration("config\\config.yml");
     private static Mode currentMode = null;
 

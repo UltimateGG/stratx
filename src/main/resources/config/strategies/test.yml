@@ -1,6 +1,6 @@
 max-open-trades: 1
 close-open-trades-on-exit: true
-candlestick-interval: FIFTEEN_MINUTES
+candlestick-interval: ONE_MINUTE
 
 take-profit:
     enabled: true

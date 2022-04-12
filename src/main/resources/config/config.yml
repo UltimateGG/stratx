@@ -11,11 +11,11 @@ backtest:
 simulation:
     show-gui: true
     starting-balance: 100.0
-    coin: BTCUSDT
+    coin: BTCUSD
 
 live-trading:
     show-gui: true
-    coin: BTCUSDT
+    coin: BTCUSD
 
 indicators:
     ema:

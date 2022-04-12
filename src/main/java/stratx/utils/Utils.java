@@ -1,6 +1,14 @@
 package stratx.utils;
 
 import com.binance.api.client.domain.market.CandlestickInterval;
+import stratx.StratX;
+
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.StandardCopyOption;
+import java.util.Objects;
+
+import static stratx.StratX.DEVELOPMENT_MODE;
 
 public class Utils {
     public static final String ANSI_GREEN = "\u001B[32m";
@@ -78,5 +86,43 @@ public class Utils {
         if (seconds > 0 && showSeconds) result += (seconds % 60) + "s ";
 
         return result;
+    }
+
+    public static boolean isFirstRun() {
+        return !new File(StratX.DATA_FOLDER, "config\\config.yml").exists() && !DEVELOPMENT_MODE;
+    }
+
+    public static void trySetup() {
+        if (!isFirstRun()) return;
+        StratX.log("Extracting config files...");
+        if (!new File(StratX.DATA_FOLDER + "config").mkdirs() || !new File(StratX.DATA_FOLDER + "config\\strategies\\").mkdirs()) {
+            StratX.log("Failed to create config folders");
+            System.exit(1);
+        }
+
+        final String[] configFiles = {
+                "/config/config.yml",
+                "/config/login.yml",
+                "/config/strategies/grid.yml"
+        };
+
+        try {
+            for (String configFile : configFiles)
+                copyFile(Objects.requireNonNull(StratX.class.getResource(configFile)).openStream(), StratX.DATA_FOLDER + configFile);
+        } catch (Exception e) {
+            StratX.log("Failed to extract config files");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        StratX.log("Setup files have successfully been extracted");
+    }
+
+    public static void copyFile(InputStream in, String target) {
+        try {
+            java.nio.file.Files.copy(in, java.nio.file.Paths.get(target), StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
