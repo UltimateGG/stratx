@@ -77,7 +77,7 @@ public class StratX {
         Strategy strat2 = new Strategy("Test", new Test());
         Strategy emaStrat = new Strategy("WMA", "test.yml", new WMA(60));
 
-        if (MODE == Mode.Type.BACKTEST) currentMode = new BackTest(emaStrat);
+        if (MODE == Mode.Type.BACKTEST) currentMode = new BackTest(strat);
         else if (MODE == Mode.Type.SIMULATION) currentMode = new Simulation(emaStrat, coin);
         else if (MODE == Mode.Type.LIVE) currentMode = new LiveTrading(strat, coin);
         else {

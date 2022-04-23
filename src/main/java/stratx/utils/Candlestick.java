@@ -1,5 +1,7 @@
 package stratx.utils;
 
+import stratx.StratX;
+
 /** A class representing a candlestick/OHLC values. */
 public class Candlestick {
     private static int MAX_ID = 0;
@@ -25,15 +27,17 @@ public class Candlestick {
         this.closeTime = closeTime;
         this.isFinal = isFinal;
 
-        // @TODO Why did I ever do heikin ashi
-//        this.open = previous == null ? open : (previous.getOpen() + previous.getClose()) / 2.0;
-//        this.high = Math.max(high, Math.max(open, close));
-//        this.low = Math.min(low, Math.min(open, close));
-//        this.close = (open + high + low + close) / 4.0;
-        this.open = open;
-        this.high = high;
-        this.low = low;
-        this.close = close;
+        if (StratX.getConfig().getBoolean("heikin-ashi-candles", false)) {
+            this.open = previous == null ? open : (previous.getOpen() + previous.getClose()) / 2.0;
+            this.high = Math.max(high, Math.max(open, close));
+            this.low = Math.min(low, Math.min(open, close));
+            this.close = (open + high + low + close) / 4.0;
+        } else {
+            this.open = open;
+            this.high = high;
+            this.low = low;
+            this.close = close;
+        }
 
         this.volume = volume;
         this.previous = previous;

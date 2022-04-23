@@ -11,6 +11,7 @@ import stratx.utils.*;
 
 import java.awt.*;
 import java.io.Closeable;
+import java.net.SocketTimeoutException;
 import java.util.List;
 
 /** Shell/base class for different modes. Live & Simulation mode need
@@ -45,7 +46,7 @@ public abstract class Mode {
     }
 
     public void begin() {
-        if (TYPE.requiresMarketDataStream()) setupMarketDataStream();
+        if (TYPE.requiresMarketDataStream()) setupReconnect();
         ACCOUNT.reset();
 
         if (this.strategy != null) {
@@ -56,11 +57,29 @@ public abstract class Mode {
         this.start();
     }
 
+    private void setupReconnect() {
+        try {
+            setupMarketDataStream();
+        } catch (Exception e) {
+            LOGGER.error("Error during market streaming", e);
+            LOGGER.error("Reconnecting in 30 seconds...");
+
+            try {
+                Thread.sleep(30_000);
+                candlestickEventListener.close();
+            } catch (Exception e1) {
+                LOGGER.error("Error closing data stream", e1);
+            } finally {
+                setupReconnect();
+            }
+        }
+    }
+
     private void setupMarketDataStream() {
         priceHistory = new PriceHistory(200);
         final double[] prevPrice = {0};
 
-        LOGGER.info("Trading on " + strategy.CANDLESTICK_INTERVAL + " interval");
+        LOGGER.info("(Market stream) Trading on " + strategy.CANDLESTICK_INTERVAL + " interval");
         StratX.trace("Trading on " + strategy.CANDLESTICK_INTERVAL + " interval");
         candlestickEventListener = StratX.API.getWebsocket().onCandlestickEvent(COIN, strategy.CANDLESTICK_INTERVAL, new BinanceApiCallback<CandlestickEvent>() {
             @Override
@@ -93,6 +112,18 @@ public abstract class Mode {
             @Override
             public void onFailure(Throwable cause) {
                 LOGGER.error("Error during candlestick stream", cause);
+                if (cause instanceof SocketTimeoutException) {
+                    LOGGER.error("Socket timeout (internet down?) reconnecting in 30 seconds...");
+
+                    try {
+                        Thread.sleep(30_000);
+                        candlestickEventListener.close();
+                    } catch (Exception e) {
+                        LOGGER.error("Error closing data stream", e);
+                    } finally {
+                        setupReconnect();
+                    }
+                }
             }
         });
 

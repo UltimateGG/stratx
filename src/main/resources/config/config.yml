@@ -1,5 +1,6 @@
 simulation-starting-balance: 100.0
 show-buy-sell-signals: true
+heikin-ashi-candles: true
 
 downloader:
     break-seconds: 3
