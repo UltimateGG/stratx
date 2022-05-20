@@ -19,6 +19,7 @@ public class EMA extends Indicator {
 
 
     public EMA(int period) {
+        super("EMA");
         this.period = period;
         this.priceHistory = new PriceHistory(period);
         this.loadSettings(StratX.getConfig());

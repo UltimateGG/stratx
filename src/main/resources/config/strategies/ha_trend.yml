@@ -1,28 +1,34 @@
 max-open-trades: 1
 close-open-trades-on-exit: true
-candlestick-interval: ONE_MINUTE
+candlestick-interval: FIVE_MINUTES
 
 take-profit:
     enabled: true
-    percent: 3.0
+    percent: 5.0
 
 stop-loss:
     enabled: false
-    percent: 2.0
+    percent: 1.5
 
 trailing-stop:
     enabled: true
-    arm-at: 0.4
+    arm-at: 0.3
     percent: 0.5
 
 buy:
-    min-signals: -1
-    percent-of-bal: 25.0
+    min-signals: 1
+    percent-of-bal: 42.0
     dont-buy-if-more-sell-signals: true
-    min-usd: 20.0
+    min-usd: 25.0
     max-usd: -1.0
+    required:
+        - "HA Trends"
     
 sell:
-    min-signals: -1
+    min-signals: 1
     based-on-indicators: true
     sell-all: false
+    required:
+        - "RSI"
+        - "WMA"
+        - "HA Trends"

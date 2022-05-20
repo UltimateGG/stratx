@@ -4,6 +4,7 @@ import com.binance.api.client.BinanceApiCallback;
 import com.binance.api.client.domain.event.CandlestickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import stratx.Loader;
 import stratx.StratX;
 import stratx.gui.Gui;
 import stratx.strategies.Strategy;
@@ -28,8 +29,10 @@ public abstract class Mode {
     protected PriceHistory priceHistory;
     protected Candlestick currentCandle = null;
     protected Candlestick previousCandle = null;
+    protected double lastPrice = 0.0;
     protected final Strategy strategy;
     protected final Account ACCOUNT;
+    protected boolean isConnectedToMarket = false;
 
 
     public Mode(Type type, Strategy strategy, String coin) {
@@ -40,9 +43,13 @@ public abstract class Mode {
         this.LOGGER = LogManager.getLogger(type.toString());
 
         this.STARTING_BALANCE = TYPE == Type.LIVE ?
-                Double.parseDouble(StratX.API.get().getAccount().getAssetBalance("USDT").getFree()) :
+                Double.parseDouble(StratX.API.get().getAccount().getAssetBalance(StratX.getTradingAsset()).getFree()) :
                 StratX.getConfig().getDouble((TYPE == Type.SIMULATION ? "simulation" : "backtest") + ".starting-balance", 100.0);
-        this.ACCOUNT = new Account(STARTING_BALANCE);
+        if (STARTING_BALANCE <= strategy.MIN_USD_PER_TRADE || STARTING_BALANCE <= 0.0)
+            throw new IllegalStateException("Starting balance must be greater than MIN_USD_PER_TRADE and 0.0");
+
+        double fee = StratX.getConfig().getDouble("buy-sell-fee-percent", 0.1) / 100.0;
+        this.ACCOUNT = new Account(STARTING_BALANCE, type == Type.LIVE ? 0.0 : fee);
     }
 
     public void begin() {
@@ -63,6 +70,7 @@ public abstract class Mode {
         } catch (Exception e) {
             LOGGER.error("Error during market streaming", e);
             LOGGER.error("Reconnecting in 30 seconds...");
+            isConnectedToMarket = false;
 
             try {
                 Thread.sleep(30_000);
@@ -84,6 +92,8 @@ public abstract class Mode {
         candlestickEventListener = StratX.API.getWebsocket().onCandlestickEvent(COIN, strategy.CANDLESTICK_INTERVAL, new BinanceApiCallback<CandlestickEvent>() {
             @Override
             public void onResponse(CandlestickEvent event) {
+                isConnectedToMarket = true;
+                lastPrice = Double.parseDouble(event.getClose());
                 Candlestick candle = new Candlestick(
                         event.getCloseTime(),
                         Double.parseDouble(event.getOpen()),
@@ -112,6 +122,8 @@ public abstract class Mode {
             @Override
             public void onFailure(Throwable cause) {
                 LOGGER.error("Error during candlestick stream", cause);
+                isConnectedToMarket = false;
+
                 if (cause instanceof SocketTimeoutException) {
                     LOGGER.error("Socket timeout (internet down?) reconnecting in 30 seconds...");
 
@@ -190,16 +202,21 @@ public abstract class Mode {
         strategy.onCandleClose(candle);
         Signal signal = strategy.getSignal();
 
-        if (signal == Signal.BUY) {
-            double amt = strategy.getBuyAmount();
-            if (amt > 0 && ACCOUNT.getBalance() >= amt && strategy.isValidBuy(amt))
-                ACCOUNT.openTrade(new Trade(this, amt));
-        } else if (signal == Signal.SELL) {
-            for (Trade trade : ACCOUNT.getTrades()) {
-                if (!trade.isOpen() || !strategy.isValidSell()) continue;
-                ACCOUNT.closeTrade(trade, "Indicator Signal");
-                if (strategy.SELL_ALL_ON_SIGNAL) break;
-            }
+        if (signal == Signal.BUY) forceBuy();
+        else if (signal == Signal.SELL) forceSell();
+    }
+
+    public void forceBuy() {
+        double amt = strategy.getBuyAmount();
+        if (amt > 0.0 && ACCOUNT.getBalance() >= amt && strategy.isValidBuy(amt))
+            ACCOUNT.openTrade(new Trade(this, amt));
+    }
+
+    public void forceSell() {
+        for (Trade trade : ACCOUNT.getTrades()) {
+            if (!trade.isOpen() || !strategy.isValidSell()) continue;
+            ACCOUNT.closeTrade(trade, "Indicator Signal");
+            if (strategy.SELL_ALL_ON_SIGNAL) break;
         }
     }
 
@@ -257,8 +274,7 @@ public abstract class Mode {
     }
 
     public double getCurrentPrice() {
-        if (currentCandle == null) return 0.0;
-        return currentCandle.getClose();
+        return lastPrice;
     }
 
     public long getCurrentTime() {
@@ -268,6 +284,10 @@ public abstract class Mode {
 
     public Account getAccount() {
         return ACCOUNT;
+    }
+
+    public boolean isConnectedToMarket() {
+        return isConnectedToMarket;
     }
 
     protected void printResults() {
@@ -303,6 +323,7 @@ public abstract class Mode {
             else losingTrades++;
         }
 
+        if (getType() == Type.BACKTEST) LOGGER.info("[!] " + Loader.lastDataRange);
         String holdingTime = String.format("[!] Avg holding time: %s",
                 Utils.msToNice(avgHoldingTime / ACCOUNT.getTrades().size(), false));
         LOGGER.info(holdingTime);

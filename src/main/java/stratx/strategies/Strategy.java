@@ -137,6 +137,7 @@ public class Strategy {
         int sellSignals = buySellSignals.sellSignals;
 
         return (((MIN_BUY_SIGNALS == -1 && buySignals >= indicators.size()) || (buySignals >= MIN_BUY_SIGNALS && MIN_BUY_SIGNALS != -1))
+                && buyRequirementsMet()
                 && (buySignals >= sellSignals && DONT_BUY_IF_SELL_GREATER)
                 && (StratX.getCurrentMode().getAccount().getOpenTrades() < MAX_OPEN_TRADES)
                 && (StratX.getCurrentMode().getAccount().getBalance() > 0)
@@ -144,14 +145,29 @@ public class Strategy {
         );
     }
 
+    private boolean buyRequirementsMet() {
+        for (Indicator indicator : indicators)
+            if (indicator.isRequiredForBuy() && indicator.getSignal() != Signal.BUY) return false;
+
+        return true;
+    }
+
     /** Called to determine if a sell position can be opened. Should generally be kept
      * the same. */
     public boolean isValidSell() {
         int sellSignals = getBuySellSignals().sellSignals;
         return (((MIN_SELL_SIGNALS == -1 && sellSignals >= indicators.size()) || (sellSignals >= MIN_SELL_SIGNALS && MIN_SELL_SIGNALS != -1))
-                && (SELL_BASED_ON_INDICATORS)
-                && (StratX.getCurrentMode().getAccount().getOpenTrades() > 0)
+                && sellRequirementsMet()
+                && SELL_BASED_ON_INDICATORS
+                && StratX.getCurrentMode().getAccount().getOpenTrades() > 0
         );
+    }
+
+    private boolean sellRequirementsMet() {
+        for (Indicator indicator : indicators)
+            if (indicator.isRequiredForSell() && indicator.getSignal() != Signal.SELL) return false;
+
+        return true;
     }
 
     private BuySellSignals getBuySellSignals() {
@@ -198,6 +214,14 @@ public class Strategy {
         MIN_SELL_SIGNALS = config.getInt("sell.min-signals", MIN_SELL_SIGNALS);
         SELL_BASED_ON_INDICATORS = config.getBoolean("sell.based-on-indicators", SELL_BASED_ON_INDICATORS);
         SELL_ALL_ON_SIGNAL = config.getBoolean("sell.sell-all", SELL_ALL_ON_SIGNAL);
+
+        for (String indStr : config.getStringList("buy.required"))
+            for (Indicator ind : indicators)
+                if (ind.getName().equals(indStr)) ind.setRequiredForBuy(true);
+
+        for (String indStr : config.getStringList("sell.required"))
+            for (Indicator ind : indicators)
+                if (ind.getName().equals(indStr)) ind.setRequiredForSell(true);
 
         String interval = config.getString("candlestick-interval");
         if (interval == null) interval = "FIVE_MINUTES";

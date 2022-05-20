@@ -19,6 +19,7 @@ public class WMA extends Indicator {
 
 
     public WMA(int period) {
+        super("WMA");
         this.period = period;
         this.priceHistory = new PriceHistory(period);
         this.loadSettings();

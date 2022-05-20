@@ -1,5 +1,6 @@
 package stratx.utils;
 
+import com.binance.api.client.domain.account.NewOrderResponse;
 import stratx.StratX;
 import stratx.modes.Mode;
 
@@ -36,6 +37,9 @@ public class Trade {
     /** The reason the trade was closed */
     private String closeReason;
 
+    /** The binance trade (If in live mode) */
+    private NewOrderResponse order;
+
 
     /** Opens trade */
     public Trade(Mode mode, double usd) {
@@ -43,8 +47,16 @@ public class Trade {
         this.mode = mode;
         this.entryPrice = mode.getCurrentPrice();
         this.entryTime = mode.getCurrentTime();
+        usd -= usd * StratX.getCurrentMode().getAccount().getBuySellFee();
         this.amountUSD = usd;
-        this.amount = usd / entryPrice;
+        if (mode.getType() == Mode.Type.SIMULATION) {
+            String converted = Utils.convertTradeAmount(usd / entryPrice, StratX.getCurrentMode().getCoin());
+            if (converted != null) this.amount = Double.parseDouble(converted);
+            else {
+                this.amount = amountUSD;
+                mode.getLogger().warn("Could not convert trade amount to coin amount");
+            }
+        } else this.amount = usd / entryPrice;
         this.isOpen = true;
 
         if (mode.shouldShowSignals())
@@ -114,9 +126,17 @@ public class Trade {
                 MathUtils.COMMAS_2F.format(getProfitPercent()));
     }
 
+    public NewOrderResponse getOrder() {
+        return order;
+    }
+
+    public void serOrder(NewOrderResponse res) {
+        this.order = res;
+    }
+
     /** Returns the current profit in USD */
     public double getProfit() {
-        return getCurrentUSDWorth() - amountUSD;
+        return (getCurrentUSDWorth() - amountUSD);
     }
 
     /** Returns the current profit % */
@@ -127,7 +147,9 @@ public class Trade {
     /** Returns the current value of this trade in USD */
     public double getCurrentUSDWorth() {
         double priceToUse = isOpen ? mode.getCurrentPrice() : exitPrice;
-        return priceToUse * amount;
+        double currentWorth = priceToUse * amount;
+        currentWorth -= currentWorth * StratX.getCurrentMode().getAccount().getBuySellFee();
+        return currentWorth;
     }
 
     public long getHoldingTime() {

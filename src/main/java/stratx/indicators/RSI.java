@@ -33,6 +33,7 @@ public class RSI extends Indicator {
     private float LINE_WIDTH = 1.5F;
 
     public RSI(int period, double overbought, double oversold) {
+        super("RSI");
         this.period = period;
         this.overbought = overbought;
         this.oversold = oversold;

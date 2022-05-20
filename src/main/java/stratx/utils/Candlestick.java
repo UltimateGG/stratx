@@ -12,6 +12,7 @@ public class Candlestick {
     private double high;
     private double low;
     private double close;
+    private double unmodifiedClose;
     private long volume;
     private final Candlestick previous;
 
@@ -39,6 +40,7 @@ public class Candlestick {
             this.close = close;
         }
 
+        this.unmodifiedClose = close;
         this.volume = volume;
         this.previous = previous;
     }
@@ -81,6 +83,11 @@ public class Candlestick {
     public void setClose(double close) {
         if (isFinal) throw new IllegalStateException("Cannot modify closed candlestick");
         this.close = close;
+        this.unmodifiedClose = close;
+    }
+
+    public double getUnmodifiedClose() {
+        return unmodifiedClose;
     }
 
     public long getVolume() {

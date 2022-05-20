@@ -1,12 +1,17 @@
 package stratx.utils;
 
+import com.binance.api.client.domain.general.FilterType;
+import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.market.CandlestickInterval;
 import stratx.StratX;
 
 import java.io.File;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.StandardCopyOption;
 import java.util.Objects;
+import java.util.Optional;
 
 import static stratx.StratX.DEVELOPMENT_MODE;
 
@@ -124,5 +129,44 @@ public class Utils {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static String convertTradeAmount(double amount, String currency) {
+        BigDecimal originalDecimal = BigDecimal.valueOf(amount);
+        int precision = StratX.API.get().getExchangeInfo().getSymbolInfo(currency).getBaseAssetPrecision(); // Round amount to base precision and LOT_SIZE
+        String lotSize;
+        Optional<String> minQtyOptional = StratX.API.get().getExchangeInfo().getSymbolInfo(currency)
+                .getFilters().stream().filter(f -> FilterType.LOT_SIZE == f.getFilterType()).findFirst().map(SymbolFilter::getMinQty);
+        Optional<String> minNotational = StratX.API.get().getExchangeInfo().getSymbolInfo(currency)
+                .getFilters().stream().filter(f -> FilterType.MIN_NOTIONAL == f.getFilterType()).findFirst().map(SymbolFilter::getMinNotional);
+
+        if (minQtyOptional.isPresent()) {
+            lotSize = minQtyOptional.get();
+        } else {
+            StratX.getLogger().error("Could not find lot size for {}, could not place trade.", currency);
+            return null;
+        }
+
+        double minQtyDouble = Double.parseDouble(lotSize);
+        if (amount < minQtyDouble) { // Check LOT_SIZE to make sure amount is not too small
+            StratX.getLogger().error("Amount smaller than min LOT_SIZE, could not open trade! (min LOT_SIZE={}, amount={})", lotSize, amount);
+            return null;
+        }
+
+        // Convert amount to an integer multiple of LOT_SIZE and convert to asset precision
+        String convertedAmount = new BigDecimal(lotSize).multiply(new BigDecimal((int) (amount / minQtyDouble))).setScale(precision, RoundingMode.HALF_DOWN).toString();
+
+        if (minNotational.isPresent()) {
+            double notational = Double.parseDouble(convertedAmount) * StratX.getCurrentMode().getCurrentPrice();
+            if (notational < Double.parseDouble(minNotational.get())) {
+                StratX.getLogger().error("Notational value {} is smaller than minimum {}", MathUtils.roundTwoDec(notational), minNotational.get());
+                return null;
+            }
+        }
+
+        StratX.trace("Converted amount {} to {}",
+                MathUtils.round(Double.parseDouble(originalDecimal.toString()), precision),
+                MathUtils.round(Double.parseDouble(convertedAmount), precision));
+        return convertedAmount;
     }
 }

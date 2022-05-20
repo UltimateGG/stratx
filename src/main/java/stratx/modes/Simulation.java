@@ -14,16 +14,14 @@ public class Simulation extends Mode {
 
     @Override
     protected void onPriceUpdate(double prevPrice, double newPrice) {
-//        System.out.println("Price Change: $" + MathUtils.COMMAS_2F.format((newPrice - prevPrice)));
         this.checkTakeProfitStopLoss();
     }
 
     @Override
     protected void onCandleClose(Candlestick candle) {
-        System.out.println("Candle Close: " + candle);
         this.checkTakeProfitStopLoss();
         this.checkBuySellSignals(candle);
-        System.out.println("Bal: $" +ACCOUNT.getBalance());
+        LOGGER.info("Candle Close - Bal: $" + ACCOUNT.getBalance());
     }
 
     private void onExit() {

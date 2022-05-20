@@ -7,9 +7,9 @@ There are a few modes:
     can download huge amounts of data.
 - Backtesting
   - Used to backtest strategies on downloaded data and show results.
-- Simulation (WIP)
+- Simulation
   - Used to simulate strategies on live data, without real money. 
-- ~~Live trading~~ (TODO)
+- Live trading (WIP)
   - Trade real money on live data. 
 > Backtesting Mode
 ![Backtest GUI](gui.png "Backtest GUI")
@@ -18,11 +18,9 @@ There are a few modes:
 
 - [x] Config file (Stop Loss, Take Profit, etc)
   - [ ] Config setup GUI?
-- [ ] Simulation trading mode
+- [X] Simulation trading mode
 - [ ] Live trading mode
-- [ ] Fix backtesting mode (Seems way off compared to simulation)
 - [ ] Not sure if we need candle gui anymore, just so glitchy
-- [ ] Better and detailed logging
 - [X] Package into executable jar
 - [x] Downloader
 - [x] Strategies (Containers for indicators)

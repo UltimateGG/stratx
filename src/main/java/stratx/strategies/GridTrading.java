@@ -27,7 +27,6 @@ public class GridTrading extends Strategy {
         if (baseLine == 0) baseLine = candle.getClose();
 
         int gridJumps = (int) Math.floor((candle.getClose() - baseLine) / gridSize);
-        System.out.println("Grid jumps: " + gridJumps);
         if (gridJumps > 0) {
             currentSignal = Signal.SELL;
         } else if (gridJumps < 0) {

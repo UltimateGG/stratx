@@ -4,11 +4,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import stratx.gui.Gui;
 import stratx.gui.GuiTheme;
-import stratx.indicators.Test;
+import stratx.indicators.HeikinAshiTrends;
+import stratx.indicators.RSI;
 import stratx.indicators.WMA;
 import stratx.modes.*;
-import stratx.strategies.GridTrading;
 import stratx.strategies.Strategy;
+import stratx.strategies.TradingViewHook;
 import stratx.utils.BinanceClient;
 import stratx.utils.Configuration;
 import stratx.utils.Utils;
@@ -73,13 +74,15 @@ public class StratX {
             LOGGER.info("Trading on {}", coin);
         }
 
-        Strategy strat = new GridTrading(40);
-        Strategy strat2 = new Strategy("Test", new Test());
-        Strategy emaStrat = new Strategy("WMA", "test.yml", new WMA(60));
+        Strategy heikinTrading = new Strategy("Heikin Ashi Trend Follower", "ha_trend.yml",
+                new HeikinAshiTrends(),
+                new RSI(14, 70, 30), new WMA(30)
+        );
+        Strategy tvHook = new TradingViewHook("tradingview.yml");
 
-        if (MODE == Mode.Type.BACKTEST) currentMode = new BackTest(strat);
-        else if (MODE == Mode.Type.SIMULATION) currentMode = new Simulation(emaStrat, coin);
-        else if (MODE == Mode.Type.LIVE) currentMode = new LiveTrading(strat, coin);
+        if (MODE == Mode.Type.BACKTEST) currentMode = new BackTest(tvHook);
+        else if (MODE == Mode.Type.SIMULATION) currentMode = new Simulation(tvHook, coin);
+        else if (MODE == Mode.Type.LIVE) currentMode = new LiveTrading(tvHook, coin);
         else {
             LOGGER.error("Invalid mode {}", MODE);
             System.exit(1);
@@ -123,6 +126,11 @@ public class StratX {
         return CONFIG;
     }
 
+    public static String getTradingAsset() {
+        String asset = CONFIG.getString("asset");
+        return asset == null ? "USD" : asset;
+    }
+
     public static Mode getCurrentMode() {
         return currentMode;
     }
@@ -140,6 +148,11 @@ public class StratX {
     }
 
     public static void trace(String msg, Object... args) {
+        LOGGER.trace(msg, args);
+    }
+
+    public static void both(String msg, Object... args) {
+        LOGGER.info(msg, args);
         LOGGER.trace(msg, args);
     }
 }

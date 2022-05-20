@@ -59,6 +59,7 @@ public class BackTest extends Mode {
 
         for (Candlestick candle : data) {
             this.currentCandle = candle;
+            lastPrice = candle.getUnmodifiedClose();
             this.onPriceUpdate(previousCandle == null ? candle.getClose() : previousCandle.getClose(), candle.getClose());
             this.onCandleClose(candle);
             this.previousCandle = candle;

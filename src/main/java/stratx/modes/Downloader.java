@@ -15,7 +15,12 @@ import stratx.utils.MathUtils;
 import stratx.utils.Utils;
 
 import javax.swing.*;
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -104,7 +109,6 @@ public class Downloader {
 
     public void download(String symbol, final long startTime, final long endTime, CandlestickInterval interval) throws IOException {
         if (downloading) throw new IllegalStateException("Already downloading");
-        String fileName = createFile(symbol, interval, startTime);
         downloading = true;
 
         int totalCandles = (int) ((endTime - startTime) / Utils.binanceIntervalToMs(interval));
@@ -115,9 +119,10 @@ public class Downloader {
             throw new IllegalArgumentException("Invalid symbol: " + symbol);
         }
 
+        String fileName = createFile(symbol, interval, startTime);
         log("Downloading %s on %s interval (%s candlesticks/%s requests)..", symbol, interval.getIntervalId(), MathUtils.COMMAS.format(totalCandles), numRequests);
 
-        try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(fileName)))) {
+        try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(Paths.get(fileName))))) {
             long currentStartTime = startTime;
 
             // the magic string is 'b4 ff b4 ff' + the version number

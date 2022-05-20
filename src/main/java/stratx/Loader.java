@@ -8,7 +8,7 @@ import stratx.utils.Utils;
 
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,6 +17,7 @@ public class Loader {
     private static Loader INSTANCE;
     private File dataFile;
     private static final Logger LOGGER = LogManager.getLogger("Loader");
+    public static String lastDataRange = "";
 
 
     public static List<Candlestick> loadData(@NotNull String file) {
@@ -56,7 +57,7 @@ public class Loader {
     private Loader() {}
 
     private void load(ArrayList<Candlestick> dataPoints) {
-        try (DataInputStream input = new DataInputStream(new FileInputStream(this.dataFile))) {
+        try (DataInputStream input = new DataInputStream(Files.newInputStream(this.dataFile.toPath()))) {
             // the magic string is 'b4 ff b4 ff' + the version number
             if (input.readUnsignedByte() != 0xb4
                     || input.readUnsignedByte() != 0xff
@@ -68,7 +69,8 @@ public class Loader {
 
             long startTime = input.readLong();
             long endTime = input.readLong();
-            LOGGER.info("Price data range: {}", Utils.msToNice(endTime - startTime, true, false, false));
+            lastDataRange = String.format("Price data range: %s", Utils.msToNice(endTime - startTime, true, false, false));
+            LOGGER.info(lastDataRange);
             Candlestick previous = null;
 
             while (input.available() > 0) {

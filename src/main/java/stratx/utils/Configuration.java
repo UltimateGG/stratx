@@ -6,6 +6,7 @@ import stratx.StratX;
 import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -77,6 +78,13 @@ public class Configuration {
     public Color getColor(String path, Color def) {
         int col = getInt(path, def.getRGB());
         return new Color(col);
+    }
+
+    public ArrayList<String> getStringList(String path) {
+        Object obj = get(path);
+
+        if (obj instanceof ArrayList) return (ArrayList<String>) obj;
+        return new ArrayList<>();
     }
 
     public boolean exists() {

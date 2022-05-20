@@ -1,25 +1,25 @@
 max-open-trades: 1
 close-open-trades-on-exit: true
-candlestick-interval: ONE_MINUTE
+candlestick-interval: HOURLY
 
 take-profit:
     enabled: true
-    percent: 6.0
+    percent: 8.0
 
 stop-loss:
-    enabled: true
-    percent: 1.5
+    enabled: false
+    percent: 2.0
 
 trailing-stop:
-    enabled: true
+    enabled: false
     arm-at: 0.4
-    percent: 1.0
+    percent: 0.5
 
 buy:
     min-signals: -1
-    percent-of-bal: 42.0
+    percent-of-bal: 60.0
     dont-buy-if-more-sell-signals: true
-    min-usd: 10.0
+    min-usd: 20.0
     max-usd: -1.0
     
 sell:

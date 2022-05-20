@@ -1,6 +1,7 @@
-simulation-starting-balance: 100.0
 show-buy-sell-signals: true
 heikin-ashi-candles: true
+asset: USD
+buy-sell-fee-percent: 0.1
 
 downloader:
     break-seconds: 3
