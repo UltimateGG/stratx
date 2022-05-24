@@ -12,6 +12,7 @@ import stratx.strategies.Strategy;
 import stratx.strategies.TradingViewHook;
 import stratx.utils.BinanceClient;
 import stratx.utils.Configuration;
+import stratx.utils.CurrencyPair;
 import stratx.utils.Utils;
 
 import javax.swing.*;
@@ -63,15 +64,17 @@ public class StratX {
             API = new BinanceClient(loginConfig);
         }
 
-        String coin = null;
+        CurrencyPair coin = null;
         if (MODE.requiresMarketDataStream()) {
-            coin = CONFIG.getString(MODE.getConfigKey() + ".coin");
-            if (coin == null || coin.isEmpty()) {
-                LOGGER.error("Coin is not set in config.yml - This is the coin the bot will trade.");
+            String crypto = CONFIG.getString("crypto");
+            String fiat = CONFIG.getString("fiat");
+            if (crypto == null || fiat == null || crypto.isEmpty() || fiat.isEmpty()) {
+                LOGGER.error("Crypto or asset is not set in config.yml - This is the currency pair the bot will trade.");
                 System.exit(1);
             }
 
-            LOGGER.info("Trading on {}", coin);
+            coin = new CurrencyPair(crypto, fiat);
+            LOGGER.info("Trading on {}", coin.toString());
         }
 
         Strategy heikinTrading = new Strategy("Heikin Ashi Trend Follower", "ha_trend.yml",
@@ -124,11 +127,6 @@ public class StratX {
 
     public static Configuration getConfig() {
         return CONFIG;
-    }
-
-    public static String getTradingAsset() {
-        String asset = CONFIG.getString("asset");
-        return asset == null ? "USD" : asset;
     }
 
     public static Mode getCurrentMode() {

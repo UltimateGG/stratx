@@ -42,15 +42,15 @@ public class Trade {
 
 
     /** Opens trade */
-    public Trade(Mode mode, double usd) {
+    public Trade(double usd) {
         if (usd <= 0.0) throw new IllegalArgumentException("USD must be positive to enter a trade");
-        this.mode = mode;
+        this.mode = StratX.getCurrentMode();
         this.entryPrice = mode.getCurrentPrice();
         this.entryTime = mode.getCurrentTime();
         usd -= usd * StratX.getCurrentMode().getAccount().getBuySellFee();
         this.amountUSD = usd;
         if (mode.getType() == Mode.Type.SIMULATION) {
-            String converted = Utils.convertTradeAmount(usd / entryPrice, StratX.getCurrentMode().getCoin());
+            String converted = Utils.convertTradeAmount(usd / entryPrice, StratX.getCurrentMode().getCoin().toString());
             if (converted != null) this.amount = Double.parseDouble(converted);
             else {
                 this.amount = amountUSD;
@@ -113,6 +113,7 @@ public class Trade {
         this.exitTime = mode.getCurrentTime();
         this.closeReason = reason;
 
+        if ("Failed to place order".equals(reason)) return;
         if (mode.shouldShowSignals())
             mode.getGUI().getCandlestickChart().addSignalIndicatorOn(mode.getCurrentCandle().getID(), Signal.SELL);
 
@@ -130,7 +131,7 @@ public class Trade {
         return order;
     }
 
-    public void serOrder(NewOrderResponse res) {
+    public void setOrder(NewOrderResponse res) {
         this.order = res;
     }
 

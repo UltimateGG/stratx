@@ -12,9 +12,6 @@ public class Strategy {
     /** The name of the strategy */
     public final String name;
 
-    /** The max open trade positions at once */
-    public int MAX_OPEN_TRADES = 1;
-
     /** Whether to use take profit or not */
     public boolean USE_TAKE_PROFIT = true;
 
@@ -73,9 +70,6 @@ public class Strategy {
     /** Don't enter a trade if there are more indicators signaling
      * sell than buy */
     public boolean DONT_BUY_IF_SELL_GREATER = true;
-
-    /** Whether to sell all trades on one sell signal, or only close one per signal */
-    public boolean SELL_ALL_ON_SIGNAL = false;
 
     /** The candlestick interval to trade on */
     public CandlestickInterval CANDLESTICK_INTERVAL = CandlestickInterval.FIVE_MINUTES;
@@ -139,7 +133,7 @@ public class Strategy {
         return (((MIN_BUY_SIGNALS == -1 && buySignals >= indicators.size()) || (buySignals >= MIN_BUY_SIGNALS && MIN_BUY_SIGNALS != -1))
                 && buyRequirementsMet()
                 && (buySignals >= sellSignals && DONT_BUY_IF_SELL_GREATER)
-                && (StratX.getCurrentMode().getAccount().getOpenTrades() < MAX_OPEN_TRADES)
+                && (StratX.getCurrentMode().getAccount().getOpenTrades() == 0)
                 && (StratX.getCurrentMode().getAccount().getBalance() > 0)
                 && amtUSD >= MIN_USD_PER_TRADE
         );
@@ -197,7 +191,6 @@ public class Strategy {
     }
 
     private void loadSettings(Configuration config) {
-        MAX_OPEN_TRADES = config.getInt("max-open-trades", MAX_OPEN_TRADES);
         CLOSE_OPEN_TRADES_ON_EXIT = config.getBoolean("close-open-trades-on-exit", CLOSE_OPEN_TRADES_ON_EXIT);
         USE_TAKE_PROFIT = config.getBoolean("take-profit.enabled", USE_TAKE_PROFIT);
         TAKE_PROFIT = config.getDouble("take-profit.percent", TAKE_PROFIT);
@@ -213,7 +206,6 @@ public class Strategy {
         MAX_USD_PER_TRADE = config.getDouble("buy.max-usd", MAX_USD_PER_TRADE);
         MIN_SELL_SIGNALS = config.getInt("sell.min-signals", MIN_SELL_SIGNALS);
         SELL_BASED_ON_INDICATORS = config.getBoolean("sell.based-on-indicators", SELL_BASED_ON_INDICATORS);
-        SELL_ALL_ON_SIGNAL = config.getBoolean("sell.sell-all", SELL_ALL_ON_SIGNAL);
 
         for (String indStr : config.getStringList("buy.required"))
             for (Indicator ind : indicators)
@@ -251,7 +243,6 @@ public class Strategy {
 
         sb.append("Config File: ").append(configName).append("\n");
         sb.append("Strategy: ").append(name).append("\n");
-        sb.append("MAX_OPEN_TRADES: ").append(MAX_OPEN_TRADES).append("\n");
         sb.append("USE_TAKE_PROFIT: ").append(USE_TAKE_PROFIT).append("\n");
         sb.append("TAKE_PROFIT: ").append(TAKE_PROFIT).append("\n");
         sb.append("USE_STOP_LOSS: ").append(USE_STOP_LOSS).append("\n");
@@ -267,7 +258,6 @@ public class Strategy {
         sb.append("MIN_USD_PER_TRADE: ").append(MIN_USD_PER_TRADE).append("\n");
         sb.append("BUY_AMOUNT_PERCENT: ").append(BUY_AMOUNT_PERCENT).append("\n");
         sb.append("DONT_BUY_IF_SELL_GREATER: ").append(DONT_BUY_IF_SELL_GREATER).append("\n");
-        sb.append("SELL_ALL_ON_SIGNAL: ").append(SELL_ALL_ON_SIGNAL).append("\n");
         sb.append("CANDLESTICK_INTERVAL: ").append(CANDLESTICK_INTERVAL).append("\n");
         
         return sb.toString();

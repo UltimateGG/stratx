@@ -1,10 +1,12 @@
 package stratx.modes;
 
+import stratx.StratX;
 import stratx.strategies.Strategy;
 import stratx.utils.Candlestick;
+import stratx.utils.CurrencyPair;
 
 public class Simulation extends Mode {
-    public Simulation(Strategy strategy, String coin) {
+    public Simulation(Strategy strategy, CurrencyPair coin) {
         super(Type.SIMULATION, strategy, coin);
         Runtime.getRuntime().addShutdownHook(new Thread(this::onExit));
     }
@@ -21,7 +23,7 @@ public class Simulation extends Mode {
     protected void onCandleClose(Candlestick candle) {
         this.checkTakeProfitStopLoss();
         this.checkBuySellSignals(candle);
-        LOGGER.info("Candle Close - Bal: $" + ACCOUNT.getBalance());
+        StratX.both("Candle Close - Bal: $" + ACCOUNT.getBalance());
     }
 
     private void onExit() {

@@ -1,4 +1,13 @@
 ## StratX
+
+## NO LONGER MAINTAINED
+I have decided to redo this bot as a new project. The new project will use TradingView webhook alerts to send buy/sell signals and the bot will execute them. This seems very nice and profitable, since you can easily customize your own strategy on TradingView, from anywhere in the world and have it update on the bot.
+
+There is a working webhook server I experimented with in this project, but the whole project is just very messy so I wanted to start a new one with way less unncesary code.
+
+The new project is at: [TradingViewHook Github](https://github.com/UltimateGG/TradingViewHook)
+
+#
 #### Crypto trading & strategy testing bot
 StratX is a crypto trading bot made in Java.
 There are a few modes:

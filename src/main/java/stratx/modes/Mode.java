@@ -20,7 +20,7 @@ import java.util.List;
  * Downloader just leaves those methods blank. */
 public abstract class Mode {
     protected final Type TYPE;
-    protected String COIN;
+    protected CurrencyPair COIN;
     protected final boolean SHOW_GUI;
     protected Gui GUI;
     protected final Logger LOGGER;
@@ -35,7 +35,7 @@ public abstract class Mode {
     protected boolean isConnectedToMarket = false;
 
 
-    public Mode(Type type, Strategy strategy, String coin) {
+    public Mode(Type type, Strategy strategy, CurrencyPair coin) {
         this.TYPE = type;
         this.strategy = strategy;
         this.COIN = coin;
@@ -43,7 +43,7 @@ public abstract class Mode {
         this.LOGGER = LogManager.getLogger(type.toString());
 
         this.STARTING_BALANCE = TYPE == Type.LIVE ?
-                Double.parseDouble(StratX.API.get().getAccount().getAssetBalance(StratX.getTradingAsset()).getFree()) :
+                Double.parseDouble(StratX.API.get().getAccount().getAssetBalance(coin.getFiat()).getFree()) :
                 StratX.getConfig().getDouble((TYPE == Type.SIMULATION ? "simulation" : "backtest") + ".starting-balance", 100.0);
         if (STARTING_BALANCE <= strategy.MIN_USD_PER_TRADE || STARTING_BALANCE <= 0.0)
             throw new IllegalStateException("Starting balance must be greater than MIN_USD_PER_TRADE and 0.0");
@@ -89,7 +89,7 @@ public abstract class Mode {
 
         LOGGER.info("(Market stream) Trading on " + strategy.CANDLESTICK_INTERVAL + " interval");
         StratX.trace("Trading on " + strategy.CANDLESTICK_INTERVAL + " interval");
-        candlestickEventListener = StratX.API.getWebsocket().onCandlestickEvent(COIN, strategy.CANDLESTICK_INTERVAL, new BinanceApiCallback<CandlestickEvent>() {
+        candlestickEventListener = StratX.API.getWebsocket().onCandlestickEvent(COIN.toString(), strategy.CANDLESTICK_INTERVAL, new BinanceApiCallback<CandlestickEvent>() {
             @Override
             public void onResponse(CandlestickEvent event) {
                 isConnectedToMarket = true;
@@ -139,8 +139,11 @@ public abstract class Mode {
             }
         });
 
+        // Initial last price
+        lastPrice = Double.parseDouble(StratX.API.get().getPrice(COIN.toString()).getPrice());
+
         // Populate price history
-        List<com.binance.api.client.domain.market.Candlestick> bars = StratX.API.get().getCandlestickBars(COIN, strategy.CANDLESTICK_INTERVAL);
+        List<com.binance.api.client.domain.market.Candlestick> bars = StratX.API.get().getCandlestickBars(COIN.toString(), strategy.CANDLESTICK_INTERVAL);
 
         for (com.binance.api.client.domain.market.Candlestick bar : bars) {
             Candlestick candle = new Candlestick(
@@ -208,15 +211,19 @@ public abstract class Mode {
 
     public void forceBuy() {
         double amt = strategy.getBuyAmount();
-        if (amt > 0.0 && ACCOUNT.getBalance() >= amt && strategy.isValidBuy(amt))
-            ACCOUNT.openTrade(new Trade(this, amt));
+        if (amt > 0.0 && ACCOUNT.getBalance() >= amt && ACCOUNT.getOpenTrades() == 0 && amt >= strategy.MIN_USD_PER_TRADE)
+            ACCOUNT.openTrade(new Trade(amt));
     }
 
     public void forceSell() {
+        if (TYPE == Type.LIVE) {
+            ACCOUNT.closeTrade(null, "Force Sell");
+            return;
+        }
+
         for (Trade trade : ACCOUNT.getTrades()) {
             if (!trade.isOpen() || !strategy.isValidSell()) continue;
             ACCOUNT.closeTrade(trade, "Indicator Signal");
-            if (strategy.SELL_ALL_ON_SIGNAL) break;
         }
     }
 
@@ -241,11 +248,11 @@ public abstract class Mode {
         return TYPE;
     }
 
-    public String getCoin() {
+    public CurrencyPair getCoin() {
         return COIN;
     }
 
-    public void setCoin(String coin) {
+    public void setCoin(CurrencyPair coin) {
         COIN = coin;
     }
 
@@ -280,6 +287,10 @@ public abstract class Mode {
     public long getCurrentTime() {
         if (currentCandle == null) return 0;
         return currentCandle.getCloseTime();
+    }
+
+    public Strategy getStrategy() {
+        return strategy;
     }
 
     public Account getAccount() {

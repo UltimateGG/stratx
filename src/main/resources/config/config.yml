@@ -1,6 +1,7 @@
 show-buy-sell-signals: true
 heikin-ashi-candles: true
-asset: USD
+crypto: BTC
+fiat: USDT
 buy-sell-fee-percent: 0.1
 
 downloader:
@@ -13,11 +14,12 @@ backtest:
 simulation:
     show-gui: true
     starting-balance: 100.0
-    coin: BTCUSD
 
 live-trading:
     show-gui: true
-    coin: BTCUSD
+    max-order-retries: 3
+    order-retry-delay: 500
+    market-order-on-retry: 3
 
 indicators:
     ema:

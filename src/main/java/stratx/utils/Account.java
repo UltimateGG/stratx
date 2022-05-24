@@ -6,6 +6,7 @@ import com.binance.api.client.domain.TimeInForce;
 import com.binance.api.client.domain.account.NewOrder;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
+import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import stratx.StratX;
 import stratx.modes.Mode;
 
@@ -27,20 +28,20 @@ public class Account {
 
     public double getBalance() {
         if (StratX.MODE == Mode.Type.LIVE)
-            return Double.parseDouble(StratX.API.get().getAccount().getAssetBalance(StratX.getTradingAsset()).getFree());
+            return Double.parseDouble(StratX.API.get().getAccount().getAssetBalance(StratX.getCurrentMode().getCoin().getFiat()).getFree());
 
         return balance;
     }
 
     public void openTrade(Trade trade) {
         if (check()) return;
-        trades.add(trade);
 
         if (StratX.MODE == Mode.Type.LIVE) {
-            placeOrder(trade, OrderSide.BUY);
+            if (placeOrder(trade, OrderSide.BUY)) trades.add(trade);
             return;
         }
 
+        trades.add(trade);
         openTrades++;
         balance -= trade.getAmountUSD();
         StratX.trace("New Balance: ${} ({} open trades)\n", MathUtils.COMMAS_2F.format(balance), openTrades);
@@ -50,8 +51,12 @@ public class Account {
         if (check()) return;
 
         if (StratX.MODE == Mode.Type.LIVE) {
-            if (placeOrder(trade, OrderSide.SELL))
+            if (trade == null) { // Force sell any crypto asset we have, get from binance
+                double bal = Double.parseDouble(StratX.API.get().getAccount().getAssetBalance(StratX.getCurrentMode().getCoin().getCrypto()).getFree());
+                if (bal > 0.0D) placeOrder(null, OrderSide.SELL);
+            } else if (placeOrder(trade, OrderSide.SELL))
                 trade.close(reason);
+
 
             return;
         }
@@ -73,67 +78,79 @@ public class Account {
 
     private boolean placeOrder(Trade trade, OrderSide side) {
         try {
-            if (trade.getOrder() == null && side == OrderSide.SELL) {
-                StratX.warn("No trade placed for {}, cannot sell.", trade);
-                return false;
-            } else if (trade.getOrder() != null && side == OrderSide.BUY) {
+            if (side == OrderSide.BUY && trade.getOrder() != null) {
                 StratX.warn("Trade already placed for {}, cannot buy.", trade);
                 return false;
             }
 
-            double amount = trade.getAmount();
+            double amount;
             if (side == OrderSide.SELL) {
-                amount = 0;
-                for (com.binance.api.client.domain.account.Trade fill : trade.getOrder().getFills())
-                    amount += Double.parseDouble(fill.getQty());
-                StratX.log("sell for {}", amount);
-            }
-            String convertedAmount = Utils.convertTradeAmount(amount, StratX.getCurrentMode().getCoin());
+                amount = Double.parseDouble(StratX.API.get().getAccount().getAssetBalance(StratX.getCurrentMode().getCoin().getCrypto()).getFree());
+                StratX.log("Sell for {}", amount);
+            } else amount = trade.getAmount();
+
+            String convertedAmount = Utils.convertTradeAmount(amount, StratX.getCurrentMode().getCoin().toString());
             String limit = BigDecimal.valueOf(side == OrderSide.BUY ? trade.getEntryPrice() : StratX.getCurrentMode().getCurrentPrice()).toString();
-            NewOrderResponse res = StratX.API.get().newOrder(
-                    side == OrderSide.BUY ? NewOrder.limitBuy(StratX.getCurrentMode().getCoin(), TimeInForce.IOC, convertedAmount, limit)
-                            .newOrderRespType(NewOrderResponseType.FULL)
-                            : NewOrder.limitSell(StratX.getCurrentMode().getCoin(), TimeInForce.IOC, convertedAmount, limit)
-                            .newOrderRespType(NewOrderResponseType.FULL)
-            );
 
-            if (side == OrderSide.BUY) trade.serOrder(res);
-            StratX.both("Placed limit {} order for {} {} (${} USD) Execute at {}", side, MathUtils.roundTwoDec(trade.getAmount()), StratX.getCurrentMode().getCoin(), trade.getAmountUSD(), limit);
+            if (convertedAmount == null) return false;
 
-            if (res.getStatus() == OrderStatus.FILLED) StratX.both("Order filled!");
-            else StratX.both("Order not yet filled! ({})", res.getStatus());
+            for (int i = 0; i < StratX.getConfig().getInt("live-trading.max-order-retries", 3); i++) {
+                StratX.both("Order attempt #{}", i + 1);
 
-            if (res.getStatus() == OrderStatus.REJECTED) {
-                StratX.both("Order rejected, closing trade!", res.getStatus());
-                trade.close("Order rejected");
-                return false;
+                NewOrderResponse res;
+                boolean market = false;
+                if (StratX.getConfig().getInt("live-trading.market-order-on-retry", 3) == i + 1) {
+                    res = StratX.API.get().newOrder(
+                            side == OrderSide.BUY ? NewOrder.marketBuy(StratX.getCurrentMode().getCoin().toString(), convertedAmount)
+                                    .newOrderRespType(NewOrderResponseType.FULL)
+                                    : NewOrder.marketSell(StratX.getCurrentMode().getCoin().toString(), convertedAmount)
+                                    .newOrderRespType(NewOrderResponseType.FULL)
+                    );
+                    market = true;
+                } else {
+                    res = StratX.API.get().newOrder(
+                            side == OrderSide.BUY ? NewOrder.limitBuy(StratX.getCurrentMode().getCoin().toString(), TimeInForce.IOC, convertedAmount, limit)
+                                    .newOrderRespType(NewOrderResponseType.FULL)
+                                    : NewOrder.limitSell(StratX.getCurrentMode().getCoin().toString(), TimeInForce.IOC, convertedAmount, limit)
+                                    .newOrderRespType(NewOrderResponseType.FULL)
+                    );
+                }
+
+                double usd = trade == null ? Double.parseDouble(StratX.API.get().getPrice(StratX.getCurrentMode().getCoin().toString()).getPrice()) * amount : trade.getAmountUSD();
+                StratX.both("Placed {} {} order for {} {} (${} USD) Execute at {}", market ? "market" : "limit", side, MathUtils.round(amount, 6), StratX.getCurrentMode().getCoin().toString(), usd, limit);
+
+                if (res.getStatus() != OrderStatus.FILLED) {
+                    StratX.both("Order not yet filled! ({})", res.getStatus());
+
+                    if (res.getStatus() == OrderStatus.REJECTED) {
+                        StratX.both("Order rejected, closing trade!");
+                        if (trade != null) trade.close("Order rejected");
+                    } else if (res.getStatus() != OrderStatus.CANCELED && res.getStatus() != OrderStatus.PENDING_CANCEL && res.getStatus() != OrderStatus.EXPIRED) { // Cancel order
+                        StratX.both("Canceling order {}", res.getOrderId());
+                        CancelOrderRequest creq = new CancelOrderRequest(StratX.getCurrentMode().getCoin().toString(), res.getOrderId());
+                        StratX.API.get().cancelOrder(creq);
+                    }
+
+                    if (res.getStatus() == OrderStatus.EXPIRED) {
+                        Thread.sleep(StratX.getConfig().getInt("live-trading.order-retry-delay", 500));
+                        continue;
+                    } else return false;
+                }
+
+                StratX.both("Order filled!");
+                if (side == OrderSide.BUY) trade.setOrder(res);
+
+                openTrades += (side == OrderSide.BUY) ? 1 : -1;
+                StratX.both("[{}/Success] {} {}\n", side, res.getExecutedQty(), StratX.getCurrentMode().getCoin());
+                return true;
             }
-
-            double fillsQty = 0;
-            double fillsPrice = 0;
-
-            for (com.binance.api.client.domain.account.Trade fill : res.getFills()) {
-                double qty = Double.parseDouble(fill.getQty());
-                fillsQty += qty - Double.parseDouble(fill.getCommission());
-                fillsPrice += qty * Double.parseDouble(fill.getPrice());
-            }
-
-            if (side == OrderSide.BUY) {
-                balance -= fillsPrice;
-                openTrades++;
-            } else {
-                balance += fillsPrice;
-                openTrades--;
-            }
-
-            StratX.trace("[{}] Fills: {} {} @ ${}\n", side, fillsQty, StratX.getCurrentMode().getCoin(), fillsPrice / fillsQty);
         } catch (Exception e) {
             StratX.getCurrentMode().getLogger().error("Error placing order", e);
-            trade.close("Failed to place order");
-            return false;
+            StratX.trace("Error: " + e.getMessage());
+            if (side == OrderSide.BUY) trade.close("Failed to place order");
         }
 
-        return true;
+        return false;
     }
 
     public ArrayList<Trade> getTrades() {

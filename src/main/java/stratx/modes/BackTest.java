@@ -6,6 +6,7 @@ import stratx.gui.Gui;
 import stratx.gui.GuiTheme;
 import stratx.strategies.Strategy;
 import stratx.utils.Candlestick;
+import stratx.utils.CurrencyPair;
 import stratx.utils.MathUtils;
 
 import javax.swing.*;
@@ -26,7 +27,7 @@ public class BackTest extends Mode {
 
     private void setup(String priceDataFile) {
         this.PRICE_DATA = priceDataFile;
-        this.setCoin(PRICE_DATA.substring(PRICE_DATA.lastIndexOf('\\') + 1).split("_")[0]);
+        this.setCoin(new CurrencyPair(PRICE_DATA.substring(PRICE_DATA.lastIndexOf('\\') + 1).split("_")[0]));
         this.loadData(this.PRICE_DATA); // Load the price data in
     }
 
@@ -47,7 +48,7 @@ public class BackTest extends Mode {
         if (SHOW_GUI) {
             GUI = new Gui("StratX Backtest", 1800, 900, false);
             GUI.setIcon("/icon.png");
-            GUI.addCandlestickChart(this.getCoin());
+            GUI.addCandlestickChart(this.getCoin().toString());
         }
 
         StratX.trace(PRICE_DATA.substring(PRICE_DATA.lastIndexOf('\\') + 1));
